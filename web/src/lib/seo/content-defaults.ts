@@ -41,9 +41,9 @@ export const DEFAULT_FAQS: FaqEntry[] = [
       "Yes. Delivery is prioritized across Lagos neighborhoods (including Gbagada, Ikeja, Surulere, Lekki, and Victoria Island within 2–3 working days) and we also ship nationwide across Nigeria, including Abuja and Port Harcourt.",
   },
   {
-    question: "How long does Lagos delivery take and what are the fees?",
+    question: "How long does Lagos delivery take?",
     answer:
-      "Lagos zone deliveries typically arrive in 2–3 working days. Standard Lagos zone fees start at ₦2,000 for Ikeja and Surulere, ₦3,000 for Lekki, and ₦4,000 for Victoria Island. Exact rates are shown at checkout.",
+      "Lagos zone deliveries typically arrive in 2–3 working days across Ikeja, Surulere, Lekki, Victoria Island, and surrounding neighborhoods.",
   },
   {
     question: "Do you make custom candles, wedding favors, or corporate gifts?",

@@ -13,7 +13,7 @@ describe("instrumentation", () => {
     vi.doMock("@/lib/jobs/scheduler", () => ({
       registerScheduler,
     }));
-    const { register } = await import("../../instrumentation");
+    const { register } = await import("@/instrumentation");
     await register();
     expect(registerScheduler).toHaveBeenCalled();
   });
@@ -25,7 +25,7 @@ describe("instrumentation", () => {
     vi.doMock("@/lib/jobs/scheduler", () => ({
       registerScheduler,
     }));
-    const { register } = await import("../../instrumentation");
+    const { register } = await import("@/instrumentation");
     await register();
     expect(registerScheduler).not.toHaveBeenCalled();
   });

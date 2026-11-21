@@ -1,13 +1,22 @@
 import mongoose from "mongoose";
 
-let connected = false;
+let connectPromise: Promise<typeof mongoose> | null = null;
 
 export async function connectDb(): Promise<void> {
-  if (connected) return;
+  if (mongoose.connection.readyState === 1) return;
+
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     throw new Error("MONGODB_URI is not defined");
   }
-  await mongoose.connect(uri, { dbName: "ligera" });
-  connected = true;
+
+  if (!connectPromise) {
+    connectPromise = mongoose
+      .connect(uri, { dbName: "ligera" })
+      .finally(() => {
+        connectPromise = null;
+      });
+  }
+
+  await connectPromise;
 }

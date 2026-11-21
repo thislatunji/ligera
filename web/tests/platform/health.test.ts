@@ -23,13 +23,13 @@ describe("health", () => {
     expect(json).toEqual({ status: "ok", db: "up" });
   });
 
-  it("returns { db: \"down\" } (not 500) when ping rejects", async () => {
+  it("returns 503 { status: \"error\", db: \"down\" } when ping rejects", async () => {
     const ping = vi.fn().mockRejectedValue(new Error("fail"));
     vi.spyOn(mongoose.connection.db as any, "admin").mockReturnValue({ ping });
     const res = await GET();
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
     const json = await res.json();
-    expect(json).toEqual({ db: "down" });
+    expect(json).toEqual({ status: "error", db: "down" });
   });
 
   it("route test: GET(new NextRequest(\"/api/health\")) → 200 JSON", async () => {

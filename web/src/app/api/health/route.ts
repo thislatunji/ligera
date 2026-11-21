@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDb } from "@/lib/db/connect";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await connectDb();
@@ -15,7 +17,7 @@ export async function GET() {
     }
     await admin.ping();
     return NextResponse.json({ status: "ok", db: "up" }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ db: "down" }, { status: 200 });
+  } catch {
+    return NextResponse.json({ status: "error", db: "down" }, { status: 503 });
   }
 }

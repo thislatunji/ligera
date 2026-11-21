@@ -262,7 +262,7 @@ export default async function ProductDetailPage({
                     href="/delivery-returns"
                     className="text-xs text-gold underline underline-offset-4 hover:text-forest-foreground"
                   >
-                    View delivery zones, fees &amp; returns
+                    View delivery zones, timelines &amp; returns
                   </Link>
                 </p>
               </div>

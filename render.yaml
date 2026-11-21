@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: ligera-web
+    runtime: docker
+    # Starter (always-on) and single instance keep the in-process node-cron scheduler
+    # (releaseExpiredHolds + processNotificationQueue) running reliably without duplicate sends.
+    plan: starter
+    numInstances: 1
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: ./web
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - web/**
+      ignoredPaths:
+        - web/tests/**
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+      - key: ENABLE_SCHEDULER
+        value: "true"
+      - key: APP_URL
+        value: https://ligerascents.com
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://ligerascents.com
+      - key: FLW_REDIRECT_URL
+        value: https://ligerascents.com/custom-requests/thanks
+      - key: EMAIL_FROM
+        value: Ligera <orders@ligerascents.com>
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: FLW_SECRET_KEY
+        sync: false
+      - key: FLW_SECRET_HASH
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

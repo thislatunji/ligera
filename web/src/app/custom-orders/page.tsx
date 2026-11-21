@@ -149,7 +149,7 @@ export default function CustomOrdersPage() {
               className="mt-8"
             />
             <p className="mt-8 text-sm text-ink/80">
-              Need delivery zone rates or studio pickup hours? See{" "}
+              Need delivery timelines or studio pickup hours? See{" "}
               <Link
                 href="/delivery-returns"
                 className="font-medium text-forest underline underline-offset-4 hover:text-gold"

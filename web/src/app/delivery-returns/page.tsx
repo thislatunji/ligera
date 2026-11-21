@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Clock, MapPin, Phone, Truck } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { naira } from "@/lib/products";
 import {
   getContentPageSafe,
   getDeliveryZonesSafe,
@@ -27,7 +26,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Lagos Delivery Zones, Nationwide Nigeria Shipping & Gbagada Studio Pickup",
   description:
-    "View Ligera Lagos delivery fees and timelines across Ikeja, Surulere, Lekki, and Victoria Island, nationwide shipping across Nigeria, Gbagada studio pickup hours (Mon–Sat 9am–6pm), and returns policy.",
+    "View Ligera Lagos delivery zones and timelines across Ikeja, Surulere, Lekki, and Victoria Island, nationwide shipping across Nigeria, Gbagada studio pickup hours (Mon–Sat 9am–6pm), and returns policy.",
   alternates: {
     canonical: "/delivery-returns",
   },
@@ -129,10 +128,10 @@ export default async function DeliveryReturnsPage() {
                     Lagos Delivery Zones
                   </p>
                   <h2 className="mt-2 text-2xl text-forest sm:text-3xl">
-                    Standard Lagos zone rates
+                    Standard Lagos delivery zones
                   </h2>
                   <p className="mt-2 text-sm text-ink/75">
-                    Zone rates are selectable directly at checkout. Orders are fulfilled from our
+                    Delivery zones are selectable directly at checkout. Orders are fulfilled from our
                     Gbagada studio.
                   </p>
                 </div>
@@ -143,19 +142,13 @@ export default async function DeliveryReturnsPage() {
                       <thead className="bg-forest text-xs uppercase tracking-wider text-forest-foreground">
                         <tr>
                           <th className="px-4 py-3 font-normal">Zone</th>
-                          <th className="px-4 py-3 font-normal text-gold">Delivery Fee</th>
-                          <th className="px-4 py-3 font-normal">Estimated Timeline</th>
+                          <th className="px-4 py-3 font-normal text-gold">Estimated Timeline</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-clay/35">
                         {zones.map((zone) => (
                           <tr key={zone.id} className="odd:bg-card even:bg-sand/50">
                             <td className="px-4 py-3.5 font-medium text-forest">{zone.name}</td>
-                            <td className="px-4 py-3.5">
-                              <span className="inline-block rounded-sm border border-sage/60 bg-sage/25 px-2.5 py-0.5 font-medium text-forest">
-                                {naira(zone.fee)}
-                              </span>
-                            </td>
                             <td className="px-4 py-3.5 text-ink/75">
                               {zone.etaText || "2–3 working days"}
                             </td>

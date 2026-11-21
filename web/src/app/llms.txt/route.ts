@@ -53,7 +53,7 @@ export async function GET() {
     "- Delivery Coverage: Lagos-first zone delivery (2–3 working days) plus nationwide shipping across Nigeria (Abuja, Port Harcourt, Ibadan, and more).",
     "- Studio Pickup: Available in Gbagada, Lagos (Mon–Sat, 9:00 AM – 6:00 PM WAT).",
     ...zones.map(
-      (z) => `- ${z.name}: ${naira(z.fee)} (${z.etaText || "2–3 working days"})`,
+      (z) => `- ${z.name}: ${z.etaText || "2–3 working days"}`,
     ),
     "",
     "## Bespoke & Custom Orders",
