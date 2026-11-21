@@ -1,25 +1,11 @@
 services:
-  backend:
+  web:
     build:
-      context: ./backend
+      context: ./web
       dockerfile: Dockerfile
-    container_name: ligeria-backend
+    container_name: ligera-web
     restart: unless-stopped
     ports:
-      - "5001:5001"
-    environment:
-      - PORT=5001
-      - CORS_ORIGIN=http://localhost:3000,http://localhost:80
+      - "3000:3000"
     env_file:
-      - ./backend/.env
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: ligeria-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
+      - ./web/.env

@@ -6,6 +6,10 @@ dist/
 dist-ssr/
 build/
 .output/
+.next/
+out/
+*.tsbuildinfo
+coverage/
 
 # Environment files
 .env

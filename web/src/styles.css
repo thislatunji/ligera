@@ -1,0 +1,457 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Ligera — Home Fragrance design system.
+ * Soft ivory / warm clay / antique gold. Cormorant Garamond + Karla.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-forest: var(--forest);
+  --color-forest-foreground: var(--forest-foreground);
+  --color-clay: var(--clay);
+  --color-sand: var(--sand);
+  --color-sage: var(--sage);
+  --color-ink: var(--ink);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Brand palette */
+  --ivory: oklch(0.976 0.008 85);
+  --sand: oklch(0.935 0.021 82);
+  --clay: oklch(0.82 0.038 62);
+  --gold: oklch(0.7 0.075 78);
+  --forest: oklch(0.27 0.035 155);
+  --forest-foreground: oklch(0.96 0.01 85);
+  --sage: oklch(0.78 0.028 140);
+  --ink: oklch(0.29 0.018 70);
+
+  --background: var(--ivory);
+  --foreground: var(--ink);
+  --card: oklch(0.99 0.005 85);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.99 0.005 85);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: oklch(0.98 0.007 85);
+  --secondary: var(--sand);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sand);
+  --muted-foreground: oklch(0.53 0.022 70);
+  --accent: var(--gold);
+  --accent-foreground: oklch(0.99 0.005 85);
+  --destructive: oklch(0.55 0.16 25);
+  --destructive-foreground: oklch(0.98 0.007 85);
+  --border: oklch(0.9 0.018 80);
+  --input: oklch(0.9 0.018 80);
+  --ring: var(--gold);
+
+  --shadow-soft: 0 1px 2px oklch(0.29 0.018 70 / 0.04), 0 12px 32px oklch(0.29 0.018 70 / 0.06);
+  --shadow-lift: 0 20px 60px oklch(0.29 0.018 70 / 0.12);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+}
+
+@utility eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+@utility btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--gold);
+  color: var(--accent-foreground);
+  padding: 0.9rem 1.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  transition: all 300ms ease;
+}
+@utility btn-gold {
+  &:hover {
+    background-color: color-mix(in oklab, var(--gold) 86%, black);
+  }
+}
+
+@utility btn-outline-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--clay);
+  color: var(--foreground);
+  padding: 0.9rem 1.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  transition: all 300ms ease;
+}
+@utility btn-outline-soft {
+  &:hover {
+    background-color: var(--sand);
+    border-color: var(--gold);
+  }
+}
+
+@utility btn-forest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--forest);
+  color: var(--forest-foreground);
+  padding: 0.9rem 1.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  transition: all 300ms ease;
+}
+@utility btn-forest {
+  &:hover {
+    background-color: color-mix(in oklab, var(--forest) 82%, black);
+  }
+}
+
+@utility btn-outline-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid oklch(0.96 0.01 85 / 0.38);
+  color: var(--forest-foreground);
+  padding: 0.9rem 1.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  transition: all 300ms ease;
+}
+@utility btn-outline-light {
+  &:hover {
+    background-color: oklch(0.96 0.01 85 / 0.12);
+    border-color: var(--gold);
+  }
+}
+
+@keyframes hero-ken-burns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.06) translate3d(-1.2%, -0.8%, 0);
+  }
+}
+
+@keyframes candle-flicker {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: scale(0.98) translate3d(0, 0, 0);
+  }
+  30% {
+    opacity: 0.72;
+    transform: scale(1.02) translate3d(1px, -2px, 0);
+  }
+  65% {
+    opacity: 0.56;
+    transform: scale(1) translate3d(-1px, 1px, 0);
+  }
+  82% {
+    opacity: 0.78;
+    transform: scale(1.03) translate3d(0, -1px, 0);
+  }
+}
+
+@keyframes scent-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.7);
+  }
+  20% {
+    opacity: 0.65;
+  }
+  80% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(8px, -42px, 0) scale(1.15);
+  }
+}
+
+.animate-hero-ken-burns {
+  animation: hero-ken-burns 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-candle-flicker {
+  animation: candle-flicker 4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-scent-drift {
+  animation: scent-drift 9s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes diffuser-reed-sway-a {
+  0% {
+    transform: rotate(-1.4deg);
+  }
+  100% {
+    transform: rotate(1.6deg);
+  }
+}
+
+@keyframes diffuser-reed-sway-b {
+  0% {
+    transform: rotate(1.5deg);
+  }
+  100% {
+    transform: rotate(-1.5deg);
+  }
+}
+
+@keyframes diffuser-reed-flutter {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(3deg);
+  }
+  45% {
+    transform: rotate(-2.1deg);
+  }
+  72% {
+    transform: rotate(1.1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes diffuser-wisp-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scaleY(0.88);
+  }
+  20% {
+    opacity: 0.72;
+  }
+  55% {
+    opacity: 0.42;
+    transform: translate3d(7px, -36px, 0) scaleY(1);
+  }
+  85% {
+    opacity: 0.18;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-5px, -82px, 0) scaleY(1.08);
+  }
+}
+
+@keyframes diffuser-wisp-rise-alt {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scaleY(0.9);
+  }
+  22% {
+    opacity: 0.68;
+  }
+  58% {
+    opacity: 0.38;
+    transform: translate3d(-8px, -38px, 0) scaleY(1.02);
+  }
+  86% {
+    opacity: 0.16;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(6px, -84px, 0) scaleY(1.1);
+  }
+}
+
+@keyframes diffuser-mote-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.65);
+  }
+  24% {
+    opacity: 0.75;
+    transform: translate3d(calc(var(--mote-dx, 8px) * 0.35), -14px, 0) scale(1.05);
+  }
+  72% {
+    opacity: 0.35;
+    transform: translate3d(calc(var(--mote-dx, 8px) * 0.85), -48px, 0) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--mote-dx, 8px), -70px, 0) scale(1.15);
+  }
+}
+
+@keyframes diffuser-oil-breathe {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-0.5deg);
+  }
+  100% {
+    transform: translate3d(0, 1.2px, 0) rotate(0.5deg);
+  }
+}
+
+@keyframes diffuser-aura-pulse {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 0.78;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes diffuser-burst-wave {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.92);
+  }
+  25% {
+    opacity: 0.78;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -68px, 0) scale(1.14);
+  }
+}
+
+.animate-diffuser-reed-a {
+  animation: diffuser-reed-sway-a 7.2s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-diffuser-reed-b {
+  animation: diffuser-reed-sway-b 8.4s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-diffuser-flutter {
+  animation: diffuser-reed-flutter 1.4s ease-out 1;
+  will-change: transform;
+}
+
+.animate-diffuser-wisp {
+  animation: diffuser-wisp-rise 8.5s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-diffuser-wisp-alt {
+  animation: diffuser-wisp-rise-alt 9.6s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-diffuser-mote {
+  animation: diffuser-mote-float 7.8s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-diffuser-oil {
+  animation: diffuser-oil-breathe 6.5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-diffuser-aura {
+  animation: diffuser-aura-pulse 7s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+
+.animate-diffuser-burst {
+  animation: diffuser-burst-wave 1.8s ease-out forwards;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-ken-burns,
+  .animate-candle-flicker,
+  .animate-scent-drift,
+  .animate-diffuser-reed-a,
+  .animate-diffuser-reed-b,
+  .animate-diffuser-flutter,
+  .animate-diffuser-wisp,
+  .animate-diffuser-wisp-alt,
+  .animate-diffuser-mote,
+  .animate-diffuser-oil,
+  .animate-diffuser-aura,
+  .animate-diffuser-burst {
+    animation: none;
+  }
+
+  .animate-diffuser-wisp,
+  .animate-diffuser-wisp-alt,
+  .animate-diffuser-mote {
+    opacity: 0.38;
+  }
+}

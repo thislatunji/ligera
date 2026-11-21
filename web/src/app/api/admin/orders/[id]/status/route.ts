@@ -1,0 +1,39 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth/guard";
+import { StatusUpdate } from "@/lib/api/schemas/orders";
+import { transitionOrder, TransitionError } from "@/lib/services/orders/transition";
+
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth(request, ["owner", "staff"]);
+  if (auth instanceof NextResponse) return auth;
+
+  try {
+    const body = await request.json();
+    const parsed = StatusUpdate.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed.", code: "VALIDATION_ERROR", details: parsed.error.issues }, { status: 400 });
+    }
+
+    const order = await transitionOrder(params.id, parsed.data.status as any, auth, {
+      note: parsed.data.note,
+      emailCustomer: parsed.data.emailCustomer,
+    });
+
+    return NextResponse.json({
+      id: order._id.toString(),
+      status: order.status,
+      statusTimeline: order.statusTimeline,
+    });
+  } catch (error: any) {
+    if (error instanceof TransitionError || error.code === "INVALID_TRANSITION") {
+      return NextResponse.json(
+        { error: error.message || "You can't make this transition.", code: "INVALID_TRANSITION", from: error.from, to: error.to },
+        { status: 409 }
+      );
+    }
+    if (error.code === "NOT_FOUND") {
+      return NextResponse.json({ error: "Order not found.", code: "NOT_FOUND" }, { status: 404 });
+    }
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}

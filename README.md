@@ -1,137 +1,113 @@
-# Ligeria Brand Experience
+# Ligera Brand Experience
 
-Fullstack home fragrance e-commerce web application for **Ligeria** ("Illuminate every space"), crafting scented candles, reed diffusers, room sprays, and gypsum decor in Lagos, Nigeria.
+Fullstack home fragrance e-commerce web application for **Ligera** ("Illuminate every space"), crafting scented candles, reed diffusers, room sprays, and gypsum decor in Lagos, Nigeria.
 
-This repository is split into two completely decoupled, self-contained directories designed for independent containerized deployments:
-- **`frontend/`**: Vite + React 19 SPA served via Nginx (or any static host)
-- **`backend/`**: Express + Node.js 22 + TypeScript REST API with Supabase integration
+The storefront, admin portal, and REST API live together in a single **Next.js 15 App Router** application (`ligera-web`) inside `web/`, backed by MongoDB (Mongoose), Flutterwave, Cloudinary, and Resend.
 
 ---
 
-## Architecture & Directory Structure
+## Directory Structure
 
-```
-ligeria-scent-glow/
-├── docker-compose.yml     # Compose file to orchestrate both containers locally/staging
-├── README.md              # Deployment and API documentation
-│
-├── frontend/              # Standalone Frontend Container Service
-│   ├── Dockerfile         # Multi-stage Docker build (Node builder -> Nginx runner)
-│   ├── .dockerignore
-│   ├── nginx.conf         # Nginx SPA fallback configuration
-│   ├── index.html         # HTML entry with brand fonts & SEO tags
-│   ├── vite.config.ts     # Vite configuration
-│   ├── package.json       # Self-contained frontend dependencies
-│   ├── tsconfig.json
-│   ├── .env / .env.example
-│   ├── public/            # Static assets (favicons, robots.txt)
-│   └── src/               # React application (routes, components, hooks, styles)
-│
-└── backend/               # Standalone Backend Container Service
-    ├── Dockerfile         # Multi-stage Docker build (Node builder -> Node runner)
-    ├── .dockerignore
-    ├── package.json       # Self-contained backend dependencies
-    ├── tsconfig.json
-    ├── .env / .env.example
-    ├── supabase/          # Supabase configuration & migrations
-    └── src/               # Express server (routes, middleware, config, types)
+```text
+ligera/
+├── docker-compose.yml     # Single `web` service definition
+├── README.md              # Project overview, setup, and API summary
+├── workflows/             # Engineering specs, contracts, and implementation plans
+└── web/                   # Unified Next.js 15 fullstack app (`ligera-web`)
+    ├── instrumentation.ts # Next.js startup hook (scheduler initialization)
+    ├── middleware.ts      # Request middleware
+    ├── next.config.ts     # Next.js configuration
+    ├── package.json       # App dependencies and scripts
+    ├── public/            # Static media and public assets
+    ├── scripts/           # Database migrations and seed scripts
+    ├── tests/             # Vitest test suite
+    └── src/
+        ├── app/           # App Router pages (storefront, /admin) & /api/* handlers
+        ├── components/    # UI, storefront, motion, and admin components
+        └── lib/           # DB models, services, auth, and validation schemas
 ```
 
 ---
 
-## 1. Backend Container (`backend/`)
+## Local Development
 
-The backend is an independent Node.js + Express API server with Supabase integration.
-
-### Configuration (`backend/.env`)
-```env
-PORT=5001
-SUPABASE_URL="https://<project-id>.supabase.co"
-SUPABASE_PUBLISHABLE_KEY="<publishable-or-anon-key>"
-SUPABASE_SERVICE_ROLE_KEY="<service-role-key-optional>"
-CORS_ORIGIN="http://localhost:3000,http://localhost:80"
-```
-
-### Local Development (without Docker)
 ```sh
-cd backend
+cd web
 npm install
-npm run dev      # starts with tsx watch on port 5001
+npm run dev      # starts Next.js dev server on http://localhost:3000
 ```
 
-### Building & Running the Backend Container
+Other scripts run from `web/`:
+
 ```sh
-cd backend
-
-# Build Docker image
-docker build -t ligeria-backend .
-
-# Run container
-docker run -p 5001:5001 --env-file .env ligeria-backend
+npm test         # run Vitest suite
+npm run build    # build Next.js production bundle
+npm start        # start Next.js production server on port 3000
 ```
 
 ---
 
-## 2. Frontend Container (`frontend/`)
+## Configuration (`web/.env`)
 
-The frontend is an independent Vite React SPA built into static assets and served by an Nginx container.
+Configure environment variables in `web/.env`:
 
-### Configuration (`frontend/.env`)
 ```env
-VITE_SUPABASE_PROJECT_ID="<project-id>"
-VITE_SUPABASE_PUBLISHABLE_KEY="<publishable-key>"
-VITE_SUPABASE_URL="https://<project-id>.supabase.co"
-# In local dev Vite proxies /api to http://localhost:5001 automatically.
-# Set VITE_API_URL in production if backend is hosted on a custom domain.
-# VITE_API_URL="https://api.yourdomain.com"
-```
+# Database & Auth
+MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>/<db>"
+JWT_ACCESS_SECRET="<access-secret>"
+JWT_REFRESH_SECRET="<refresh-secret>"
+APP_URL="http://localhost:3000"
 
-### Local Development (without Docker)
-```sh
-cd frontend
-npm install
-npm run dev      # starts Vite on port 3000
-```
+# Flutterwave Payments
+FLW_SECRET_KEY="<flutterwave-secret-key>"
+FLW_SECRET_HASH="<flutterwave-webhook-hash>"
+FLW_REDIRECT_URL="http://localhost:3000/custom-requests/thanks"
 
-### Building & Running the Frontend Container
-```sh
-cd frontend
+# Cloudinary Media
+CLOUDINARY_CLOUD_NAME="<cloud-name>"
+CLOUDINARY_API_KEY="<api-key>"
+CLOUDINARY_API_SECRET="<api-secret>"
 
-# Build Docker image
-docker build -t ligeria-frontend .
+# Resend Email
+RESEND_API_KEY="<resend-api-key>"
+EMAIL_FROM="Ligera <orders@yourdomain.com>"
 
-# Run container
-docker run -p 3000:80 ligeria-frontend
+# Background Scheduler
+ENABLE_SCHEDULER="true"
+
+# Optional Owner Seed Script (`scripts/seed-owner.ts`)
+OWNER_EMAIL="<owner-email>"
+OWNER_NAME="<owner-name>"
+OWNER_PASSWORD="<owner-password>"
 ```
 
 ---
 
-## 3. Running Both with Docker Compose
-
-To test both isolated containers together locally:
+## Running with Docker Compose
 
 ```sh
 docker compose up --build
 ```
 
-- **Frontend App**: `http://localhost:3000`
-- **Backend API**: `http://localhost:5001`
-- **Health Check**: `http://localhost:5001/api/health`
+- **App URL**: `http://localhost:3000`
+- **Health Check**: `http://localhost:3000/api/health`
 
 ---
 
-## Backend API Reference
+## API Routes Overview
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/health` | Health check | No |
-| `GET` | `/api/products` | Active products with signed image URLs | No |
-| `POST` | `/api/orders` | Place customer order & reduce inventory | No |
-| `GET` | `/api/admin/me` | Check admin privileges | Yes (Bearer) |
-| `GET` | `/api/admin/products` | All products with inventory alert levels | Yes (Bearer) |
-| `POST` | `/api/admin/products` | Create or update product | Yes (Bearer) |
-| `DELETE` | `/api/admin/products/:id` | Delete product | Yes (Bearer) |
-| `POST` | `/api/admin/products/:id/stock` | Update stock and low stock thresholds | Yes (Bearer) |
-| `GET` | `/api/admin/orders` | List customer orders and line items | Yes (Bearer) |
-| `PATCH` | `/api/admin/orders/:id/status` | Update order status | Yes (Bearer) |
-| `PATCH` | `/api/admin/orders/items/:itemId/fulfillment` | Update line item fulfillment count | Yes (Bearer) |
+All route handlers are served under `web/src/app/api/`:
+
+- **Storefront & Public**
+  - `GET /api/health` — application and database health check
+  - `GET /api/products`, `GET /api/products/[slug]` — catalog listings and product details
+  - `GET /api/categories`, `GET /api/delivery-zones`, `GET /api/search/suggest`, `GET /api/content/[slug]` — taxonomy, delivery zones, search suggestions, and CMS pages
+  - `POST /api/checkout/quote`, `POST /api/checkout/orders`, `POST /api/orders/lookup` — checkout quoting, order placement, and customer order lookup
+  - `POST /api/custom-requests` — custom/bespoke order inquiry submission
+  - `POST /api/webhooks/flutterwave` — signed Flutterwave payment webhook
+- **Authentication (`/api/auth/*`)**
+  - `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/refresh`, `GET /api/auth/me`
+  - `POST /api/auth/2fa/setup`, `POST /api/auth/2fa/enable`
+  - `POST /api/auth/password/request-reset`, `POST /api/auth/password/confirm-reset`
+- **Admin (`/api/admin/*`)**
+  - Protected management endpoints for `dashboard`, `products` (CRUD, variants, stock, CSV import/export), `categories`, `orders` (status, verification, cancel, refund, packing slip, CSV export), `custom-requests`, `customers`, `delivery-zones`, `content`, `notifications`, `settings`, `uploads/sign`, and `activity-logs`.
