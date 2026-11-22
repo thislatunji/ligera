@@ -19,5 +19,13 @@ export async function POST(request: NextRequest) {
     path: "/api/auth",
   });
 
+  response.cookies.set("lg_session", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 0,
+    path: "/ligera",
+  });
+
   return response;
 }

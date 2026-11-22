@@ -13,8 +13,29 @@ export async function GET(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   try {
     await connectDb();
-    const cats = await Category.find({}).sort({ sortOrder: 1 }).lean();
-    return NextResponse.json(cats, { status: 200 });
+    const [cats, productRefs] = await Promise.all([
+      Category.find({}).sort({ sortOrder: 1, name: 1 }).lean(),
+      Product.find({}, { categoryId: 1, spaceTagIds: 1 }).lean(),
+    ]);
+    const counts = new Map<string, number>();
+    for (const p of productRefs as any[]) {
+      const seen = new Set<string>();
+      if (p.categoryId) seen.add(p.categoryId.toString());
+      if (Array.isArray(p.spaceTagIds)) {
+        for (const s of p.spaceTagIds) {
+          if (s) seen.add(s.toString());
+        }
+      }
+      for (const cid of seen) {
+        counts.set(cid, (counts.get(cid) || 0) + 1);
+      }
+    }
+    const enriched = cats.map((c: any) => ({
+      ...c,
+      id: c._id.toString(),
+      productCount: counts.get(c._id.toString()) || 0,
+    }));
+    return NextResponse.json(enriched, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: "Something went wrong on our side.", code: "INTERNAL" }, { status: 500 });
   }

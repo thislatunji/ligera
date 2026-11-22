@@ -8,14 +8,18 @@ import { CategoryInput } from "@/lib/api/schemas/catalog";
 import mongoose from "mongoose";
 import { slugify } from "@/lib/utils/slug";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
     await connectDb();
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const parsed = CategoryInput.partial().safeParse(body);
-    const cat = await Category.findById(params.id);
+    const cat = await Category.findById(id);
     if (!cat) {
       return NextResponse.json({ error: "We couldn't find that category.", code: "NOT_FOUND" }, { status: 404 });
     }
@@ -54,12 +58,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
     await connectDb();
-    const cat = await Category.findById(params.id);
+    const { id } = await Promise.resolve(params);
+    const cat = await Category.findById(id);
     if (!cat) {
       return NextResponse.json({ error: "We couldn't find that category.", code: "NOT_FOUND" }, { status: 404 });
     }
@@ -69,7 +77,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Category is in use by products.", code: "CATEGORY_IN_USE" }, { status: 409 });
     }
     const before = cat.toObject();
-    await Category.findByIdAndDelete(params.id);
+    await Category.findByIdAndDelete(id);
     try {
       await ActivityLog.create({
         userId: new mongoose.Types.ObjectId(auth.userId),

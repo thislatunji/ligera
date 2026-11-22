@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Check, ChevronDown, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Check, MapPin, MessageCircle, Phone } from "lucide-react";
+import { CustomOrderProductSelect } from "@/components/CustomOrderProductSelect";
 import {
   CUSTOM_ORDER_CATEGORIES,
   DEFAULT_CUSTOM_ORDER_IMAGE,
@@ -92,27 +93,14 @@ export function CustomOrderForm() {
           <label htmlFor="custom-order-product" className="block">
             <span className="eyebrow text-forest">Product</span>
           </label>
-          <div className="relative mt-2">
-            <select
+          <div className="mt-2">
+            <CustomOrderProductSelect
               id="custom-order-product"
               name="product"
               value={selectedProduct}
-              onChange={(e) => handleProductChange(e.target.value)}
-              aria-invalid={Boolean(errors.product)}
-              aria-describedby={errors.product ? "custom-order-product-error" : undefined}
-              className="w-full appearance-none rounded-sm border border-clay/70 bg-background px-3.5 py-3 pr-10 text-sm text-foreground outline-none transition-colors focus:border-forest"
-            >
-              <option value="">Select a product…</option>
-              {CUSTOM_ORDER_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-forest/70"
-              strokeWidth={1.5}
-              aria-hidden="true"
+              onValueChange={handleProductChange}
+              invalid={Boolean(errors.product)}
+              describedBy={errors.product ? "custom-order-product-error" : undefined}
             />
           </div>
           {errors.product && (

@@ -4,18 +4,22 @@ import { CancelInput } from "@/lib/api/schemas/orders";
 import { cancelOrder } from "@/lib/services/orders/cancel";
 import { TransitionError } from "@/lib/services/orders/transition";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner", "staff"]);
   if (auth instanceof NextResponse) return auth;
 
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const parsed = CancelInput.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed.", code: "VALIDATION_ERROR", details: parsed.error.issues }, { status: 400 });
     }
 
-    const result = await cancelOrder(params.id, auth, parsed.data);
+    const result = await cancelOrder(id, auth, parsed.data);
     return NextResponse.json(result);
   } catch (error: any) {
     if (error instanceof TransitionError || error.code === "INVALID_TRANSITION") {

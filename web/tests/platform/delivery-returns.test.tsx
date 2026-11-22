@@ -20,9 +20,9 @@ describe("DeliveryReturnsPage", () => {
     cleanup();
   });
 
-  it("renders delivery zones and timelines without delivery fees", async () => {
+  it("renders delivery zones and timelines without delivery fees and visibly renders FAQPage entries", async () => {
     const page = await DeliveryReturnsPage();
-    render(<CartProvider>{page}</CartProvider>);
+    const { container } = render(<CartProvider>{page}</CartProvider>);
 
     const table = screen.getByRole("table");
     const tableScope = within(table);
@@ -44,5 +44,19 @@ describe("DeliveryReturnsPage", () => {
       DEFAULT_DELIVERY_ZONES.length,
     );
     expect(table.textContent).not.toContain("₦");
+
+    const jsonLdScripts = Array.from(
+      container.querySelectorAll('script[type="application/ld+json"]'),
+    );
+    const parsedScripts = jsonLdScripts.map((el) => JSON.parse(el.textContent ?? "{}"));
+    const faqSchema = parsedScripts.find((doc) => doc["@type"] === "FAQPage");
+    expect(faqSchema).toBeDefined();
+    expect(Array.isArray(faqSchema.mainEntity)).toBe(true);
+    expect(faqSchema.mainEntity.length).toBeGreaterThanOrEqual(3);
+
+    for (const entry of faqSchema.mainEntity) {
+      expect(screen.getByText(entry.name)).toBeDefined();
+      expect(screen.getByText(entry.acceptedAnswer.text)).toBeDefined();
+    }
   });
 });

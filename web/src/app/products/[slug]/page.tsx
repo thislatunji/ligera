@@ -17,11 +17,12 @@ import {
   buildProductJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
+  DEFAULT_OG_IMAGE,
   STUDIO_ADDRESS,
   STUDIO_HOURS_DISPLAY,
   STUDIO_PHONE_DISPLAY,
-  absoluteUrl,
 } from "@/lib/seo/site";
 
 export const revalidate = 300;
@@ -43,30 +44,34 @@ export async function generateMetadata({
 
   const title =
     product.seo?.title?.trim() || `${product.name} — ${product.category} in Lagos`;
-  const description =
+  const rawDescription =
     product.seo?.metaDescription?.trim() ||
-    `Buy ${product.name} (${product.category}) from Ligera in Lagos for ${naira(product.priceFrom)}. Handcrafted in Gbagada with Lagos delivery, studio pickup, and nationwide Nigeria shipping.`;
-  const ogImage = product.seo?.ogImage?.trim() || product.imageUrl;
+    `Buy ${product.name} (${product.category}) from Ligera in Lagos for ${naira(product.priceFrom)}. Handcrafted in Gbagada with Lagos delivery, studio pickup & Nigeria shipping.`;
+  const description =
+    rawDescription.length > 160
+      ? `${rawDescription.slice(0, 157).trimEnd()}...`
+      : rawDescription;
+  const ogImageUrl = product.seo?.ogImage?.trim() || product.imageUrl;
+  const primaryImg = product.images?.[0];
 
-  return {
+  return buildPageMetadata({
     title,
     description,
-    alternates: {
-      canonical: `/products/${product.slug}`,
-    },
-    openGraph: {
-      title: `${title} | Ligera`,
-      description,
-      url: absoluteUrl(`/products/${product.slug}`),
-      images: ogImage ? [{ url: ogImage }] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} | Ligera`,
-      description,
-      images: ogImage ? [ogImage] : undefined,
-    },
-  };
+    path: `/products/${product.slug}`,
+    image:
+      ogImageUrl && ogImageUrl !== DEFAULT_OG_IMAGE
+        ? {
+            url: ogImageUrl,
+            ...(ogImageUrl === primaryImg?.url && primaryImg.width
+              ? { width: primaryImg.width }
+              : {}),
+            ...(ogImageUrl === primaryImg?.url && primaryImg.height
+              ? { height: primaryImg.height }
+              : {}),
+            alt: product.imageAlt || `${product.name} — ${product.category}`,
+          }
+        : undefined,
+  });
 }
 
 export default async function ProductDetailPage({
@@ -90,14 +95,48 @@ export default async function ProductDetailPage({
     product.scentNotes.heart.length > 0 ||
     product.scentNotes.base.length > 0;
 
-  const related = allProducts
-    .filter((p) => p.slug !== product.slug)
+  const pairedProducts = (product.pairsWith ?? [])
+    .map((pair) =>
+      allProducts.find((p) => p.slug === pair.slug || p.id === pair.id),
+    )
+    .filter(
+      (p): p is NonNullable<typeof p> => Boolean(p && p.slug !== product.slug),
+    );
+
+  const seenRelatedSlugs = new Set(pairedProducts.map((p) => p.slug));
+  const categoryFallback = allProducts
+    .filter((p) => p.slug !== product.slug && !seenRelatedSlugs.has(p.slug))
     .sort((a, b) => {
       const aSame = findSeoCategory(a.category)?.slug === seoCat?.slug ? 0 : 1;
       const bSame = findSeoCategory(b.category)?.slug === seoCat?.slug ? 0 : 1;
       return aSame - bSame;
-    })
-    .slice(0, 4);
+    });
+
+  const related = [...pairedProducts, ...categoryFallback].slice(0, 4);
+
+  const additionalProperty = [
+    ...(product.scentNotes.top.length > 0
+      ? [{ name: "Top Scent Notes", value: product.scentNotes.top.join(", ") }]
+      : []),
+    ...(product.scentNotes.heart.length > 0
+      ? [{ name: "Heart Scent Notes", value: product.scentNotes.heart.join(", ") }]
+      : []),
+    ...(product.scentNotes.base.length > 0
+      ? [{ name: "Base Scent Notes", value: product.scentNotes.base.join(", ") }]
+      : []),
+    ...(product.finish?.trim()
+      ? [{ name: "Finish / Format", value: product.finish.trim() }]
+      : []),
+    ...(product.burnTime?.trim()
+      ? [{ name: "Burn Time", value: product.burnTime.trim() }]
+      : []),
+    ...(product.dimensions?.trim()
+      ? [{ name: "Dimensions", value: product.dimensions.trim() }]
+      : []),
+    ...(product.ingredients?.trim()
+      ? [{ name: "Materials / Ingredients", value: product.ingredients.trim() }]
+      : []),
+  ];
 
   const productJsonLd = buildProductJsonLd({
     name: product.name,
@@ -107,8 +146,12 @@ export default async function ProductDetailPage({
     category: product.category,
     price: product.priceFrom,
     imageUrl: product.imageUrl,
+    images: product.images.map((i) => i.url),
+    sku: product.variants[0]?.sku,
     inStock: product.badge !== "sold_out",
     madeToOrder: product.madeToOrder,
+    variants: product.variants,
+    additionalProperty,
   });
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

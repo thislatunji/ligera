@@ -14,9 +14,20 @@ export type QuoteRequest = z.infer<typeof QuoteRequest>;
 
 export const CheckoutRequest = z.object({
   contact: z.object({
-    name: z.string().trim().min(1).max(120),
-    email: z.string().trim().email().max(255),
-    phone: z.string().trim().regex(/^(\+?234|0)\d{9,10}$/, "Enter a valid Nigerian phone number."),
+    name: z.string().trim().min(1, "Enter your full name.").max(120),
+    email: z.string().trim().email("Enter a valid email address.").max(255),
+    phone: z
+      .string()
+      .trim()
+      .transform((v) => v.replace(/[\s()-]+/g, ""))
+      .pipe(
+        z
+          .string()
+          .regex(
+            /^(\+?234|0)\d{9,10}$/,
+            "Enter a valid Nigerian phone number (e.g. 0809 661 3114)."
+          )
+      ),
   }),
   address: z
     .object({

@@ -5,7 +5,7 @@ export const SITE_URL = (
 export const SITE_NAME = "Ligera";
 export const SITE_TAGLINE = "Illuminate Every Space";
 export const SITE_DESCRIPTION =
-  "Lagos home fragrance house in Gbagada crafting hand-poured scented candles, reed diffusers, room & linen sprays, and sculpted gypsum decor. Lagos-first delivery, nationwide Nigeria shipping & studio pickup.";
+  "Lagos home fragrance house in Gbagada crafting hand-poured scented candles, reed diffusers, room sprays, and gypsum decor. Lagos & nationwide Nigeria delivery.";
 
 export const SITE_EMAIL = "orders@ligerascents.com";
 export const STUDIO_PHONE_DISPLAY = "0809 661 3114";
@@ -30,7 +30,11 @@ export const STUDIO_MAPS_URL =
 export const STUDIO_MAPS_EMBED_URL =
   "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1s43+Onabola+Street,+Pedro+Road,+Gbagada,+Lagos!6i16";
 
-export const DEFAULT_OG_IMAGE = "/hero-poster.jpg";
+export const SITE_LOGO_PATH = "/logo.png";
+export const STUDIO_HERO_IMAGE = "/hero-poster.jpg";
+export const DEFAULT_OG_IMAGE = "/opengraph-image";
+export const DEFAULT_OG_IMAGE_ALT =
+  "Ligera — Hand-poured scented candles, reed diffusers, room sprays, and gypsum decor in Lagos";
 
 export const AREA_SERVED = [
   "Gbagada, Lagos",

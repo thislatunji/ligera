@@ -5,23 +5,16 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getContentPageSafe } from "@/lib/seo/catalog.server";
 import { DEFAULT_PRIVACY_SECTIONS } from "@/lib/seo/content-defaults";
 import { buildBreadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonld";
-import { absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy (NDPA 2023)",
   description:
     "How Ligera collects, uses, and protects your order and contact information in line with the Nigeria Data Protection Act 2023 (NDPA 2023).",
-  alternates: {
-    canonical: "/privacy",
-  },
-  openGraph: {
-    title: "Privacy Policy | Ligera",
-    description: "Ligera Privacy Policy aligned with NDPA 2023.",
-    url: absoluteUrl("/privacy"),
-  },
-};
+  path: "/privacy",
+});
 
 export default async function PrivacyPage() {
   const cmsPage = await getContentPageSafe("privacy");

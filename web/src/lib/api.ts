@@ -62,15 +62,6 @@ function readLocalAdminProducts(): AdminProduct[] {
   }
 }
 
-function writeLocalAdminProducts(items: AdminProduct[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(items));
-  } catch {
-    // ignore quota errors
-  }
-}
-
 function localProductsToPublic(): Product[] {
   return readLocalAdminProducts()
     .filter((p) => p.active !== false)
@@ -86,65 +77,6 @@ function localProductsToPublic(): Product[] {
       stock: p.stock,
       imageUrl: p.imageUrl ?? null,
     }));
-}
-
-function slugifyLocal(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || `product-${Date.now().toString(36)}`
-  );
-}
-
-function upsertLocalProduct(data: ProductDraft): { id: string } {
-  const items = readLocalAdminProducts();
-  const normalizedImageUrl =
-    data.imageUrl && data.imageUrl.trim() !== "" ? data.imageUrl.trim() : null;
-  const idx = data.id ? items.findIndex((p) => p.id === data.id) : -1;
-
-  if (idx >= 0) {
-    const existing = items[idx];
-    items[idx] = {
-      ...existing,
-      name: data.name,
-      notes: data.notes,
-      category: data.category,
-      price: data.price,
-      stock: data.stock,
-      low_stock_threshold: data.lowStockThreshold,
-      active: data.active,
-      sort_order: data.sortOrder,
-      imageUrl: normalizedImageUrl,
-    };
-    writeLocalAdminProducts(items);
-    return { id: existing.id };
-  }
-
-  const baseSlug = slugifyLocal(data.name);
-  const newId = data.id ?? `${baseSlug}-${Date.now().toString(36)}`;
-  const next: AdminProduct = {
-    id: newId,
-    variantId: data.variantId,
-    slug: baseSlug,
-    name: data.name,
-    notes: data.notes,
-    category: data.category,
-    price: data.price,
-    stock: data.stock,
-    low_stock_threshold: data.lowStockThreshold,
-    active: data.active,
-    sort_order: data.sortOrder,
-    imageUrl: normalizedImageUrl,
-  };
-  items.push(next);
-  writeLocalAdminProducts(items);
-  return { id: newId };
-}
-
-function shouldFallbackLocal(status: number): boolean {
-  return status === 401 || status === 403 || status === 404 || status >= 500;
 }
 
 // Shop API
@@ -166,6 +98,7 @@ export async function listProducts(): Promise<Product[]> {
       name: p.name,
       notes: p.notes ?? "",
       category: p.category ?? "Candles",
+      categorySlug: p.categorySlug,
       price: p.price ?? p.priceFrom ?? 0,
       stock: p.stock ?? (p.badge === "sold_out" ? 0 : 10),
       imageUrl: p.imageUrl || null,
@@ -203,14 +136,23 @@ export type OrderInput = {
   zoneId?: string;
   deliveryMethod?: "delivery" | "pickup";
   note?: string;
+  hidePrices?: boolean;
   items: { id: string; variantId?: string; qty: number }[];
+};
+
+export type PlaceOrderResult = {
+  reference: string;
+  total: number;
+  paymentUrl?: string;
+  holdExpiresAt?: string;
+  expectedDeliveryWindow?: string;
 };
 
 export async function placeOrder({
   data,
 }: {
   data: OrderInput;
-}): Promise<{ reference: string; total: number; paymentUrl?: string }> {
+}): Promise<PlaceOrderResult> {
   const deliveryMethod = data.deliveryMethod ?? (data.zoneId ? "delivery" : "pickup");
   const payload: Record<string, unknown> = {
     contact: {
@@ -220,6 +162,7 @@ export async function placeOrder({
     },
     deliveryMethod,
     giftNote: data.note ?? "",
+    hidePrices: Boolean(data.hidePrices),
     items: data.items.map((i) => ({
       variantId: i.variantId ?? i.id,
       qty: i.qty,
@@ -247,12 +190,110 @@ export async function placeOrder({
     reference?: string;
     total: number;
     paymentUrl?: string;
+    holdExpiresAt?: string;
+    expectedDeliveryWindow?: string;
   }>(res);
   return {
     reference: result.orderNumber ?? result.reference ?? "",
     total: result.total,
     paymentUrl: result.paymentUrl,
+    holdExpiresAt: result.holdExpiresAt,
+    expectedDeliveryWindow: result.expectedDeliveryWindow,
   };
+}
+
+export interface CheckoutQuote {
+  items: Array<{
+    variantId: string;
+    productId: string;
+    slug?: string;
+    name: string;
+    label?: string;
+    unitPrice: number;
+    qty: number;
+    lineTotal: number;
+    available: number;
+    soldOut: boolean;
+  }>;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  freeDeliveryGap?: number;
+  expectedDeliveryWindow?: string;
+}
+
+export async function fetchCheckoutQuote(input: {
+  items: { variantId: string; qty: number }[];
+  zoneId?: string;
+  deliveryMethod: "delivery" | "pickup";
+}): Promise<CheckoutQuote> {
+  const res = await fetch(`${API_BASE}/api/checkout/quote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return handleResponse<CheckoutQuote>(res);
+}
+
+export interface PublicOrderPaymentStatus {
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  deliveryMethod: "delivery" | "pickup";
+  deliveryZoneName: string;
+  items: Array<{ name: string; qty: number; unitPrice: number }>;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  expectedDeliveryWindow: string;
+  placedAt: string;
+  paidAt: string | null;
+  paymentUrl: string | null;
+}
+
+async function fetchPublicOrderEndpoint(
+  url: string,
+  signal?: AbortSignal
+): Promise<{ status: number; data: PublicOrderPaymentStatus | null }> {
+  const res = await fetch(url, {
+    method: "GET",
+    cache: "no-store",
+    signal,
+  });
+  let data: PublicOrderPaymentStatus | null = null;
+  try {
+    const json = await res.json();
+    if (res.ok && json && typeof json.orderNumber === "string") {
+      data = json as PublicOrderPaymentStatus;
+    }
+  } catch {
+    // ignore non-JSON body
+  }
+  return { status: res.status, data };
+}
+
+export async function getOrderPaymentStatus(
+  orderNumber: string,
+  signal?: AbortSignal
+): Promise<{ status: number; data: PublicOrderPaymentStatus | null }> {
+  return fetchPublicOrderEndpoint(
+    `${API_BASE}/api/checkout/orders/${encodeURIComponent(orderNumber)}/status`,
+    signal
+  );
+}
+
+export async function verifyOrderPaymentStatus(
+  orderNumber: string,
+  transactionId?: string | null,
+  signal?: AbortSignal
+): Promise<{ status: number; data: PublicOrderPaymentStatus | null }> {
+  const qs = transactionId
+    ? `?transaction_id=${encodeURIComponent(transactionId)}`
+    : "";
+  return fetchPublicOrderEndpoint(
+    `${API_BASE}/api/checkout/orders/${encodeURIComponent(orderNumber)}/verify-status${qs}`,
+    signal
+  );
 }
 
 // Admin API
@@ -292,40 +333,30 @@ export type AdminProduct = {
 };
 
 export async function adminListProducts(): Promise<AdminProduct[]> {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/api/admin/products`, {
-      headers,
-      credentials: "include",
-    });
-    if (!res.ok) {
-      return readLocalAdminProducts();
-    }
-    const json = await res.json();
-    const items = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
-    if (items.length === 0) {
-      return readLocalAdminProducts();
-    }
-    return items.map((p: any) => {
-      const v = Array.isArray(p.variants) ? p.variants[0] : undefined;
-      return {
-        id: p.id,
-        variantId: v?.id,
-        slug: p.slug,
-        name: p.name,
-        notes: p.description ?? "",
-        category: p.category?.name || "Candles",
-        price: v?.price ?? 0,
-        stock: v?.stockQty ?? 0,
-        low_stock_threshold: v?.lowStockThreshold ?? 5,
-        active: p.status === "published",
-        sort_order: p.sortOrder ?? 0,
-        imageUrl: p.imageThumb ?? p.images?.[0]?.publicId ?? null,
-      };
-    });
-  } catch {
-    return readLocalAdminProducts();
-  }
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/admin/products`, {
+    headers,
+    credentials: "include",
+  });
+  const json = await handleResponse<{ data?: any[] } | any[]>(res);
+  const items = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
+  return items.map((p: any) => {
+    const v = Array.isArray(p.variants) ? p.variants[0] : undefined;
+    return {
+      id: p.id,
+      variantId: v?.id,
+      slug: p.slug,
+      name: p.name,
+      notes: p.description ?? "",
+      category: p.category?.name || "Candles",
+      price: v?.price ?? 0,
+      stock: v?.stockQty ?? 0,
+      low_stock_threshold: v?.lowStockThreshold ?? 5,
+      active: p.status === "published",
+      sort_order: p.sortOrder ?? 0,
+      imageUrl: p.imageThumb ?? p.images?.[0]?.publicId ?? null,
+    };
+  });
 }
 
 export type ProductDraft = {
@@ -369,30 +400,20 @@ export async function saveProduct({ data }: { data: ProductDraft }): Promise<{ i
         },
       ];
     }
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/products/${data.id}`, {
-        method: "PUT",
-        headers,
-        credentials: "include",
-        body: JSON.stringify(updateBody),
-      });
-      if (shouldFallbackLocal(res.status)) {
-        return upsertLocalProduct(data);
-      }
-      const updated = await handleResponse<{ id: string }>(res);
-      await fetch(`${API_BASE}/api/admin/products/${data.id}/status`, {
-        method: "PATCH",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ status: data.active ? "published" : "archived" }),
-      });
-      return updated;
-    } catch (err) {
-      if (err instanceof TypeError) {
-        return upsertLocalProduct(data);
-      }
-      throw err;
-    }
+    const res = await fetch(`${API_BASE}/api/admin/products/${data.id}`, {
+      method: "PUT",
+      headers,
+      credentials: "include",
+      body: JSON.stringify(updateBody),
+    });
+    const updated = await handleResponse<{ id: string }>(res);
+    await fetch(`${API_BASE}/api/admin/products/${data.id}/status`, {
+      method: "PATCH",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ status: data.active ? "published" : "archived" }),
+    });
+    return updated;
   }
 
   const skuBase = data.name
@@ -419,75 +440,51 @@ export async function saveProduct({ data }: { data: ProductDraft }): Promise<{ i
     ],
   };
 
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/products`, {
-      method: "POST",
+  const res = await fetch(`${API_BASE}/api/admin/products`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: JSON.stringify(createBody),
+  });
+  const created = await handleResponse<{ id: string }>(res);
+
+  if (data.active) {
+    await fetch(`${API_BASE}/api/admin/products/${created.id}/status`, {
+      method: "PATCH",
       headers,
       credentials: "include",
-      body: JSON.stringify(createBody),
+      body: JSON.stringify({ status: "published" }),
     });
-    if (shouldFallbackLocal(res.status)) {
-      return upsertLocalProduct(data);
-    }
-    const created = await handleResponse<{ id: string }>(res);
+  }
 
-    if (data.active) {
-      await fetch(`${API_BASE}/api/admin/products/${created.id}/status`, {
-        method: "PATCH",
+  if (data.stock > 0) {
+    const products = await adminListProducts();
+    const match = products.find((p) => p.id === created.id);
+    if (match?.variantId) {
+      await fetch(`${API_BASE}/api/admin/variants/${match.variantId}/stock`, {
+        method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify({ status: "published" }),
+        body: JSON.stringify({
+          change: data.stock,
+          reason: "restock",
+          note: "Initial stock",
+        }),
       });
     }
-
-    if (data.stock > 0) {
-      const products = await adminListProducts();
-      const match = products.find((p) => p.id === created.id);
-      if (match?.variantId) {
-        await fetch(`${API_BASE}/api/admin/variants/${match.variantId}/stock`, {
-          method: "POST",
-          headers,
-          credentials: "include",
-          body: JSON.stringify({
-            change: data.stock,
-            reason: "restock",
-            note: "Initial stock",
-          }),
-        });
-      }
-    }
-
-    return created;
-  } catch (err) {
-    if (err instanceof TypeError) {
-      return upsertLocalProduct(data);
-    }
-    throw err;
   }
+
+  return created;
 }
 
 export async function deleteProduct({ data }: { data: { id: string } }): Promise<{ ok: boolean }> {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE}/api/admin/products/${data.id}`, {
-      method: "DELETE",
-      headers,
-      credentials: "include",
-    });
-    if (shouldFallbackLocal(res.status)) {
-      const items = readLocalAdminProducts().filter((p) => p.id !== data.id);
-      writeLocalAdminProducts(items);
-      return { ok: true };
-    }
-    return handleResponse<{ ok: boolean }>(res);
-  } catch (err) {
-    if (err instanceof TypeError) {
-      const items = readLocalAdminProducts().filter((p) => p.id !== data.id);
-      writeLocalAdminProducts(items);
-      return { ok: true };
-    }
-    throw err;
-  }
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/admin/products/${data.id}`, {
+    method: "DELETE",
+    headers,
+    credentials: "include",
+  });
+  return handleResponse<{ ok: boolean }>(res);
 }
 
 export async function setStock({
@@ -504,62 +501,32 @@ export async function setStock({
   const headers = await getAuthHeaders();
   const targetId = data.variantId ?? data.id;
 
-  const updateLocalStock = () => {
-    const items = readLocalAdminProducts().map((p) =>
-      p.id === data.id
-        ? {
-            ...p,
-            stock: data.stock !== undefined ? data.stock : p.stock,
-            low_stock_threshold:
-              data.lowStockThreshold !== undefined
-                ? data.lowStockThreshold
-                : p.low_stock_threshold,
-          }
-        : p,
-    );
-    writeLocalAdminProducts(items);
-    return { ok: true };
-  };
-
-  try {
-    if (data.stock !== undefined && data.currentStock !== undefined && data.stock !== data.currentStock) {
-      const change = data.stock - data.currentStock;
-      const res = await fetch(`${API_BASE}/api/admin/variants/${targetId}/stock`, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({
-          change,
-          reason: "correction",
-          note: "Updated from admin",
-        }),
-      });
-      if (shouldFallbackLocal(res.status)) {
-        return updateLocalStock();
-      }
-      await handleResponse(res);
-    }
-
-    if (data.lowStockThreshold !== undefined) {
-      const res = await fetch(`${API_BASE}/api/admin/variants/${targetId}`, {
-        method: "PUT",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ lowStockThreshold: data.lowStockThreshold }),
-      });
-      if (shouldFallbackLocal(res.status)) {
-        return updateLocalStock();
-      }
-      await handleResponse(res);
-    }
-
-    return { ok: true };
-  } catch (err) {
-    if (err instanceof TypeError) {
-      return updateLocalStock();
-    }
-    throw err;
+  if (data.stock !== undefined && data.currentStock !== undefined && data.stock !== data.currentStock) {
+    const change = data.stock - data.currentStock;
+    const res = await fetch(`${API_BASE}/api/admin/variants/${targetId}/stock`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({
+        change,
+        reason: "correction",
+        note: "Updated from admin",
+      }),
+    });
+    await handleResponse(res);
   }
+
+  if (data.lowStockThreshold !== undefined) {
+    const res = await fetch(`${API_BASE}/api/admin/variants/${targetId}`, {
+      method: "PUT",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ lowStockThreshold: data.lowStockThreshold }),
+    });
+    await handleResponse(res);
+  }
+
+  return { ok: true };
 }
 
 export type AdminOrderItem = {

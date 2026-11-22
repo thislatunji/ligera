@@ -11,23 +11,14 @@ import {
   buildFaqJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
-import { DEFAULT_OG_IMAGE, absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Custom Scented Candles, Wedding Favors & Corporate Gifts in Lagos",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Custom Candles, Wedding Favors & Corporate Gifts",
   description:
-    "Order bespoke scented candles, custom reed diffusers, room sprays, gypsum trays, wedding souvenirs, corporate gifts, and short-let scenting crafted in Gbagada, Lagos for delivery across Nigeria.",
-  alternates: {
-    canonical: "/custom-orders",
-  },
-  openGraph: {
-    title: "Custom Scented Candles, Wedding Favors & Corporate Gifts | Ligera",
-    description:
-      "Bespoke candles, reed diffusers, room sprays, and sculpted gypsum pieces crafted in Gbagada, Lagos for weddings, corporate gifting, and hospitality.",
-    url: absoluteUrl("/custom-orders"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+    "Order bespoke scented candles, reed diffusers, room sprays, gypsum trays, wedding favors, and corporate gifts crafted in Gbagada, Lagos for Nigeria delivery.",
+  path: "/custom-orders",
+});
 
 const bespokeUseCases = [
   {

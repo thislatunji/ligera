@@ -32,9 +32,9 @@ export const SEO_CATEGORIES: readonly SeoCategory[] = [
     name: "Scented Candles",
     shortTitle: "Scented Candles",
     headline: "Scented Candles in Lagos",
-    seoTitle: "Scented Candles in Lagos — Hand-Poured Luxury Candles",
+    seoTitle: "Scented Candles in Lagos — Hand-Poured Candles",
     seoDescription:
-      "Shop hand-poured scented candles crafted in small batches at Ligera's Gbagada, Lagos studio. Clean-burning wax, cotton wicks, Lagos delivery, nationwide Nigeria shipping & studio pickup.",
+      "Shop small-batch hand-poured scented candles crafted in Gbagada, Lagos. Clean wax, cotton wicks, Lagos delivery, studio pickup & nationwide Nigeria shipping.",
     intro:
       "Hand-poured in small batches in our Gbagada, Lagos studio using clean-burning wax and hand-trimmed cotton wicks, cured slowly for a warm, lingering scent throw. Available for Lagos dispatch, Gbagada studio pickup, and nationwide delivery across Nigeria.",
     subtitle: "Hand-poured wax · Cotton wicks",
@@ -48,9 +48,9 @@ export const SEO_CATEGORIES: readonly SeoCategory[] = [
     name: "Reed Diffusers",
     shortTitle: "Reed Diffusers",
     headline: "Reed Diffusers in Lagos",
-    seoTitle: "Reed Diffusers in Lagos — Long-Lasting Home Fragrance",
+    seoTitle: "Reed Diffusers in Lagos — Long-Lasting Fragrance",
     seoDescription:
-      "Buy long-lasting reed diffusers crafted in Lagos by Ligera. Steady, flameless home fragrance oils for bedrooms, living rooms, offices, and short-lets across Lagos and Nigeria.",
+      "Buy long-lasting reed diffusers crafted in Lagos by Ligera. Steady flameless home fragrance for bedrooms, living rooms & short-lets across Lagos and Nigeria.",
     intro:
       "Composed with layered top, heart, and base fragrance notes paired with natural reeds for effortless, flameless scenting in homes, offices, and short-let apartments. Fast dispatch across Lagos with studio pickup in Gbagada and nationwide delivery.",
     subtitle: "Steady, effortless atmosphere",
@@ -64,9 +64,9 @@ export const SEO_CATEGORIES: readonly SeoCategory[] = [
     name: "Room & Linen Sprays",
     shortTitle: "Room and Linen Spray",
     headline: "Room and Linen Sprays in Nigeria",
-    seoTitle: "Room & Linen Sprays in Nigeria — Fine Home Fragrance Mists",
+    seoTitle: "Room & Linen Sprays in Nigeria — Fine Home Mists",
     seoDescription:
-      "Discover Ligera room and linen sprays handcrafted in Lagos. Fine mist home fragrances for bedrooms, bedding, curtains, and living spaces with Lagos & nationwide Nigeria delivery.",
+      "Discover Ligera room and linen sprays handcrafted in Lagos. Fine mist fragrances for bedding, curtains, and living spaces with Lagos & Nigeria-wide delivery.",
     intro:
       "Fine, lingering fragrance mists made for freshly laundered sheets, pillows, curtains, and living rooms whenever a space calls for an instant reset. Hand-mixed in Gbagada, Lagos and delivered across Lagos and Nigeria.",
     subtitle: "Fine mist for rooms & linens",
@@ -85,9 +85,9 @@ export const SEO_CATEGORIES: readonly SeoCategory[] = [
     name: "Gypsum Decor",
     shortTitle: "Gypsum Decor",
     headline: "Handcrafted Gypsum Decor in Lagos",
-    seoTitle: "Gypsum Decor in Lagos — Handcrafted Trays, Vessels & Vases",
+    seoTitle: "Gypsum Decor in Lagos — Handcrafted Trays & Vases",
     seoDescription:
-      "Shop sculptural gypsum trays, ribbed vessels, and curve vases cast, hand-sanded, and sealed in Lagos by Ligera. Ideal for home styling and bespoke gifting across Nigeria.",
+      "Shop sculptural gypsum trays, ribbed vessels, and curve vases cast, hand-sanded, and sealed in Lagos by Ligera for home styling and gifting across Nigeria.",
     intro:
       "Each arch tray, ribbed vessel, and curve vase is cast in mineral gypsum, hand-sanded smooth, and sealed against water and wax in our Gbagada workbench. Styled alone or paired with our candles and diffusers.",
     subtitle: "Sculpted trays & matte vessels",

@@ -4,9 +4,9 @@ import { Clock, ExternalLink, Instagram, MapPin, Phone } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { buildBreadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonld";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
   AREA_SERVED,
-  DEFAULT_OG_IMAGE,
   STUDIO_ADDRESS,
   STUDIO_HOURS_DISPLAY,
   STUDIO_INSTAGRAM_HANDLE,
@@ -14,24 +14,14 @@ import {
   STUDIO_MAPS_EMBED_URL,
   STUDIO_MAPS_URL,
   STUDIO_PHONE_DISPLAY,
-  absoluteUrl,
 } from "@/lib/seo/site";
 
-export const metadata: Metadata = {
-  title: "Visit Our Studio — 43 Onabola Street, Gbagada, Lagos",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Visit Our Studio — 43 Onabola St, Gbagada, Lagos",
   description:
-    "Visit Ligera at 43 Onabola Street, Pedro Road, Gbagada, Lagos for studio pickup, custom candle consultations, reed diffusers, room sprays, and gypsum decor. Open Mon–Sat, 9am–6pm WAT.",
-  alternates: {
-    canonical: "/visit-us",
-  },
-  openGraph: {
-    title: "Visit Ligera Studio — Gbagada, Lagos",
-    description:
-      "43 Onabola Street, Pedro Road, Gbagada, Lagos. Open Mon–Sat, 9am–6pm WAT for studio pickup and bespoke fragrance inquiries.",
-    url: absoluteUrl("/visit-us"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+    "Visit Ligera at 43 Onabola Street, Pedro Road, Gbagada, Lagos for pickup, custom candle orders, diffusers & gypsum decor. Open Mon–Sat, 9am–6pm WAT.",
+  path: "/visit-us",
+});
 
 export default function VisitUsPage() {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

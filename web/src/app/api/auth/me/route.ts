@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
         name: authResult.name,
         email: authResult.email,
         role: authResult.role,
+        twoFactorEnabled: Boolean(authResult.twoFactorEnabled),
       },
     },
     { status: 200 }

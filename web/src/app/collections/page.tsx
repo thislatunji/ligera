@@ -8,25 +8,16 @@ import {
   buildItemListJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
-import { DEFAULT_OG_IMAGE, absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Collections — Scented Candles, Reed Diffusers, Room Sprays & Gypsum Decor",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Collections — Candles, Diffusers, Sprays & Gypsum",
   description:
-    "Browse Ligera's complete home fragrance collection handcrafted in Gbagada, Lagos: scented candles, reed diffusers, room & linen sprays, and sculpted gypsum decor. Lagos delivery, studio pickup & nationwide Nigeria shipping.",
-  alternates: {
-    canonical: "/collections",
-  },
-  openGraph: {
-    title: "Collections — Scented Candles, Reed Diffusers & Gypsum Decor | Ligera",
-    description:
-      "Shop hand-poured scented candles, reed diffusers, room sprays, and gypsum decor made in Lagos with nationwide Nigeria delivery.",
-    url: absoluteUrl("/collections"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+    "Shop Ligera's Lagos home fragrance collection: scented candles, reed diffusers, room & linen sprays, and gypsum decor. Lagos & nationwide Nigeria delivery.",
+  path: "/collections",
+});
 
 export default async function CollectionsPage({
   searchParams,

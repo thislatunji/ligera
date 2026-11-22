@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CollectionsClient } from "@/components/CollectionsClient";
-import { getPublicProductsSafe } from "@/lib/seo/catalog.server";
+import { getDynamicCategoryBySlugSafe, getPublicProductsSafe } from "@/lib/seo/catalog.server";
 import { SEO_CATEGORIES, findSeoCategory } from "@/lib/seo/categories";
 import {
   buildBreadcrumbJsonLd,
   buildItemListJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
-import { DEFAULT_OG_IMAGE, absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 300;
 
@@ -23,29 +23,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { category } = await params;
   const seoCat = findSeoCategory(category);
-  if (!seoCat) {
+  if (seoCat) {
+    return buildPageMetadata({
+      title: seoCat.seoTitle,
+      description: seoCat.seoDescription,
+      path: `/collections/${seoCat.slug}`,
+    });
+  }
+
+  const dynCat = await getDynamicCategoryBySlugSafe(category);
+  if (!dynCat) {
     return {};
   }
 
-  return {
-    title: seoCat.seoTitle,
-    description: seoCat.seoDescription,
-    alternates: {
-      canonical: `/collections/${seoCat.slug}`,
-    },
-    openGraph: {
-      title: `${seoCat.seoTitle} | Ligera`,
-      description: seoCat.seoDescription,
-      url: absoluteUrl(`/collections/${seoCat.slug}`),
-      images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${seoCat.seoTitle} | Ligera`,
-      description: seoCat.seoDescription,
-      images: [DEFAULT_OG_IMAGE],
-    },
-  };
+  return buildPageMetadata({
+    title: `${dynCat.name} in Lagos`,
+    description:
+      dynCat.description ||
+      `Shop ${dynCat.name} handcrafted in Lagos by Ligera. Small-batch home fragrance and decor with Lagos and nationwide Nigeria delivery.`,
+    path: `/collections/${dynCat.slug}`,
+  });
 }
 
 export default async function CategoryCollectionPage({
@@ -55,23 +52,35 @@ export default async function CategoryCollectionPage({
 }) {
   const { category } = await params;
   const seoCat = findSeoCategory(category);
-  if (!seoCat) {
+  if (seoCat && category !== seoCat.slug) {
+    permanentRedirect(`/collections/${seoCat.slug}`);
+  }
+  const dynCat = seoCat ? null : await getDynamicCategoryBySlugSafe(category);
+  if (!seoCat && !dynCat) {
     notFound();
   }
 
+  const activeSlug = seoCat?.slug ?? dynCat!.slug;
+  const activeTitle = seoCat?.shortTitle ?? dynCat!.name;
+  const activeHeadline = seoCat?.headline ?? dynCat!.name;
+  const activeIntro =
+    seoCat?.intro ??
+    (dynCat!.description ||
+      "Handcrafted in small batches at our Gbagada, Lagos studio with Lagos dispatch, studio pickup, and nationwide delivery.");
+
   const allProducts = await getPublicProductsSafe();
   const categoryProducts = allProducts.filter(
-    (p) => findSeoCategory(p.category)?.slug === seoCat.slug,
+    (p) => p.categorySlug === activeSlug || findSeoCategory(p.category)?.slug === activeSlug,
   );
 
-  const path = `/collections/${seoCat.slug}`;
+  const path = `/collections/${activeSlug}`;
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", path: "/" },
     { name: "Collections", path: "/collections" },
-    { name: seoCat.shortTitle, path },
+    { name: activeTitle, path },
   ]);
   const itemListJsonLd = buildItemListJsonLd(
-    seoCat.headline,
+    activeHeadline,
     path,
     categoryProducts,
   );
@@ -88,11 +97,11 @@ export default async function CategoryCollectionPage({
       />
       <CollectionsClient
         initialProducts={allProducts}
-        activeCategorySlug={seoCat.slug}
+        activeCategorySlug={activeSlug}
         eyebrow="The collection"
-        headline={seoCat.headline}
-        intro={seoCat.intro}
-        customOrderValue={seoCat.customOrderValue}
+        headline={activeHeadline}
+        intro={activeIntro}
+        customOrderValue={seoCat?.customOrderValue}
       />
     </>
   );

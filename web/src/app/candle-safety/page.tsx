@@ -5,25 +5,16 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getContentPageSafe } from "@/lib/seo/catalog.server";
 import { DEFAULT_CANDLE_SAFETY_SECTIONS } from "@/lib/seo/content-defaults";
 import { buildBreadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonld";
-import { DEFAULT_OG_IMAGE, absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Candle Safety & Home Fragrance Care Guide",
   description:
     "How to care for scented candles, reed diffusers, room & linen sprays, and sealed gypsum trays and vases from Ligera in Lagos.",
-  alternates: {
-    canonical: "/candle-safety",
-  },
-  openGraph: {
-    title: "Candle Safety & Care Guide | Ligera",
-    description:
-      "Wick trimming, first-burn tips, reed diffuser placement, and sealed gypsum decor care from Ligera.",
-    url: absoluteUrl("/candle-safety"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+  path: "/candle-safety",
+});
 
 export default async function CandleSafetyPage() {
   const cmsPage = await getContentPageSafe("candle-safety");

@@ -17,11 +17,18 @@ import {
 
 type CollectionsClientProps = {
   initialProducts?: Product[];
-  activeCategorySlug?: SeoCategorySlug | null;
+  activeCategorySlug?: string | null;
   eyebrow?: string;
   headline?: string;
   intro?: string;
   customOrderValue?: string;
+};
+
+type DynamicCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
 };
 
 export function CollectionsClient({
@@ -37,12 +44,34 @@ export function CollectionsClient({
     initialData: initialProducts,
   });
 
+  const { data: apiCategories = [] } = useQuery<DynamicCategory[]>({
+    queryKey: ["public-categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories?type=category");
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const coreSlugs = new Set<string>(SEO_CATEGORIES.map((c) => c.slug));
+  const extraCategories = apiCategories.filter((c) => !coreSlugs.has(c.slug));
+
   const activeCategory = activeCategorySlug
     ? SEO_CATEGORIES.find((c) => c.slug === activeCategorySlug)
     : undefined;
+  const activeExtraCategory =
+    activeCategorySlug && !activeCategory
+      ? extraCategories.find((c) => c.slug === activeCategorySlug)
+      : undefined;
 
   const shown = activeCategorySlug
-    ? products.filter((p) => findSeoCategory(p.category)?.slug === activeCategorySlug)
+    ? products.filter(
+        (p) =>
+          p.categorySlug === activeCategorySlug ||
+          findSeoCategory(p.category)?.slug === activeCategorySlug,
+      )
     : products;
 
   const customHref = customOrderValue
@@ -56,7 +85,7 @@ export function CollectionsClient({
       <main>
         <section className="border-b border-clay/50 bg-sand/85">
           <div className="mx-auto max-w-6xl px-5 pt-14 pb-8 md:pt-16 md:pb-10">
-            {activeCategory && (
+            {(activeCategory || activeExtraCategory || activeCategorySlug) && (
               <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-xs text-ink/70">
                 <Link href="/" className="hover:text-forest">
                   Home
@@ -66,7 +95,9 @@ export function CollectionsClient({
                   Collections
                 </Link>
                 <span aria-hidden="true">/</span>
-                <span className="font-medium text-forest">{activeCategory.shortTitle}</span>
+                <span className="font-medium text-forest">
+                  {activeCategory?.shortTitle ?? activeExtraCategory?.name ?? headline}
+                </span>
               </nav>
             )}
 
@@ -98,6 +129,19 @@ export function CollectionsClient({
                   }
                 >
                   {c.shortTitle}
+                </Link>
+              ))}
+              {extraCategories.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/collections/${c.slug}`}
+                  className={
+                    activeCategorySlug === c.slug
+                      ? "rounded-sm border border-forest bg-forest px-4 py-2 text-[11px] tracking-[0.18em] text-forest-foreground uppercase"
+                      : "rounded-sm border border-clay/70 bg-card px-4 py-2 text-[11px] tracking-[0.18em] text-ink/80 uppercase transition-colors hover:border-forest hover:text-forest"
+                  }
+                >
+                  {c.name}
                 </Link>
               ))}
             </nav>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, MapPin, Phone, Truck } from "lucide-react";
+import { FaqAccordion } from "@/components/FaqAccordion";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import {
@@ -13,31 +14,21 @@ import {
   buildFaqJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
-  DEFAULT_OG_IMAGE,
   STUDIO_ADDRESS,
   STUDIO_HOURS_DISPLAY,
   STUDIO_PHONE_DISPLAY,
-  absoluteUrl,
 } from "@/lib/seo/site";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Lagos Delivery Zones, Nationwide Nigeria Shipping & Gbagada Studio Pickup",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Lagos Delivery, Nigeria Shipping & Studio Pickup",
   description:
-    "View Ligera Lagos delivery zones and timelines across Ikeja, Surulere, Lekki, and Victoria Island, nationwide shipping across Nigeria, Gbagada studio pickup hours (Mon–Sat 9am–6pm), and returns policy.",
-  alternates: {
-    canonical: "/delivery-returns",
-  },
-  openGraph: {
-    title: "Delivery, Studio Pickup & Returns | Ligera",
-    description:
-      "Lagos-first delivery zones, nationwide Nigeria shipping, Gbagada studio pickup, and returns policy.",
-    url: absoluteUrl("/delivery-returns"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+    "View Ligera Lagos delivery zones and timelines, nationwide Nigeria shipping, Gbagada studio pickup hours (Mon–Sat, 9am–6pm WAT), and returns policy.",
+  path: "/delivery-returns",
+});
 
 export default async function DeliveryReturnsPage() {
   const [zones, cmsReturns] = await Promise.all([
@@ -222,6 +213,16 @@ export default async function DeliveryReturnsPage() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="border-t border-clay/50 bg-background">
+          <div className="mx-auto max-w-5xl px-5 py-14 md:py-16">
+            <p className="eyebrow text-forest">Delivery &amp; Pickup FAQs</p>
+            <h2 className="mt-2 text-3xl text-forest">
+              Frequently asked delivery questions
+            </h2>
+            <FaqAccordion items={deliveryFaqs} variant="sand" className="mt-8" />
           </div>
         </section>
       </main>

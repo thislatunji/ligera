@@ -1,4 +1,5 @@
 import { connectDb } from "@/lib/db/connect";
+import { Category } from "@/lib/db/models/category";
 import { DeliveryZone } from "@/lib/db/models/deliveryZone";
 import { Product as ProductModel } from "@/lib/db/models/product";
 import { getContentPage } from "@/lib/services/admin/content";
@@ -17,6 +18,7 @@ import { findSeoCategory } from "./categories";
 
 export interface PublicProduct extends Product {
   updatedAt?: string;
+  madeToOrder?: boolean;
 }
 
 export interface ProductDetailData {
@@ -43,6 +45,7 @@ export interface ProductDetailData {
   variants: {
     id: string;
     label: string;
+    sku?: string;
     price: number;
     salePrice: number | null;
     available: number;
@@ -78,9 +81,19 @@ export async function getPublicProductsSafe(): Promise<PublicProduct[]> {
   }
 
   try {
-    const result = await listProducts({ page: 1, limit: 100 });
-    if (!result?.data || result.data.length === 0) {
+    const firstPage = await listProducts({ page: 1, limit: 100 });
+    if (!firstPage?.data || firstPage.data.length === 0) {
       return fallbackProductList();
+    }
+
+    const allItems = [...firstPage.data];
+    const total = firstPage.meta?.total ?? allItems.length;
+    let page = 2;
+    while (allItems.length < total) {
+      const nextPage = await listProducts({ page, limit: 100 });
+      if (!nextPage?.data || nextPage.data.length === 0) break;
+      allItems.push(...nextPage.data);
+      page += 1;
     }
 
     let updatedMap = new Map<string, string>();
@@ -98,20 +111,52 @@ export async function getPublicProductsSafe(): Promise<PublicProduct[]> {
       // ignore optional updatedAt lookup failure
     }
 
-    return result.data.map((p: any) => ({
+    return allItems.map((p: any) => ({
       id: p.id,
       variantId: p.variantId,
       slug: p.slug,
       name: p.name,
       notes: p.notes ?? "",
       category: p.category ?? "Candles",
+      categorySlug: p.categorySlug,
       price: p.price ?? p.priceFrom ?? 0,
       stock: p.stock ?? (p.badge === "sold_out" ? 0 : 10),
       imageUrl: p.imageUrl || null,
+      madeToOrder: p.badge === "made_to_order",
       updatedAt: updatedMap.get(p.slug),
     }));
   } catch {
     return fallbackProductList();
+  }
+}
+
+export async function getDynamicCategoryBySlugSafe(slug: string): Promise<{
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+} | null> {
+  if (!hasDatabaseConfigured()) {
+    return null;
+  }
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return null;
+  try {
+    await connectDb();
+    const cat = (await Category.findOne({
+      slug: normalized,
+      type: "category",
+      active: true,
+    }).lean()) as any;
+    if (!cat) return null;
+    return {
+      id: cat._id.toString(),
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description || "",
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -208,7 +253,7 @@ export async function getProductDetailSafe(
       ...dbProduct,
       variantId: dbProduct.variants?.[0]?.id,
       category: seoCat?.name ?? categoryName,
-      categorySlug: seoCat?.slug ?? "scented-candles",
+      categorySlug: seoCat?.slug ?? rawDoc?.categoryId?.slug ?? "scented-candles",
       imageUrl: finalImage,
       images:
         dbProduct.images && dbProduct.images.length > 0

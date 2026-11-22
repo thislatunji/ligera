@@ -3,6 +3,7 @@ import { Product } from "@/lib/db/models/product";
 import { Variant } from "@/lib/db/models/variant";
 import { Category } from "@/lib/db/models/category";
 import { ProductQuery } from "@/lib/api/schemas/catalog";
+import { buildCloudinaryImageUrl } from "@/lib/cloudinary/url";
 
 function getBadge(product: any, variants: any[]) {
   if (product.madeToOrder) return "made_to_order";
@@ -23,12 +24,9 @@ function getBadge(product: any, variants: any[]) {
 
 function resolveImageUrl(img: any, width: number): string {
   if (!img) return "";
-  if (typeof img === "string") return img;
+  if (typeof img === "string") return buildCloudinaryImageUrl(img, width);
   if (typeof img.publicId === "string" && img.publicId.length > 0) {
-    if (/^(https?:\/\/|\/|data:)/.test(img.publicId)) {
-      return img.publicId;
-    }
-    return `https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_${width}/${img.publicId}.jpg`;
+    return buildCloudinaryImageUrl(img.publicId, width);
   }
   if (typeof img.url === "string") {
     return img.url;
@@ -149,7 +147,7 @@ export async function listProducts(query: Partial<ProductQuery>) {
       variantId: pVariants[0]?._id?.toString(),
       slug: product.slug,
       name: product.name,
-      notes: product.description || notesFromScent,
+      notes: notesFromScent || product.finish || product.description || "",
       category: cat?.name || "Candles",
       categorySlug: cat?.slug,
       price: priceFrom,
@@ -182,6 +180,7 @@ export async function getProductBySlug(slug: string) {
     return {
       id: v._id.toString(),
       label: v.label,
+      sku: v.sku || undefined,
       price: v.price,
       salePrice: v.salePrice ?? null,
       available,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useState, type MouseEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ImagePlus, Pencil, RotateCcw, Upload, X } from "lucide-react";
+import { Check, Pencil, RotateCcw, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -405,42 +405,31 @@ export function EditableProductImageTrigger({ product }: { product: Product }) {
   );
 }
 
-/** Subtle floating pill allowing studio owners to toggle on-page image editing or open Studio Admin. */
+/** Subtle floating pill allowing authenticated studio editors to toggle on-page image editing when ?editImages=1 is active. */
 export function SiteImageEditBar() {
   const { editing, toggleEditing } = useEditImagesMode();
+
+  if (!editing) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2">
       <button
         type="button"
         onClick={toggleEditing}
-        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium shadow-md backdrop-blur-sm transition-colors ${
-          editing
-            ? "border-gold bg-forest text-forest-foreground"
-            : "border-border bg-background/95 text-foreground hover:border-gold"
-        }`}
+        className="inline-flex items-center gap-2 rounded-full border border-gold bg-forest px-3.5 py-2 text-xs font-medium text-forest-foreground shadow-md backdrop-blur-sm transition-colors"
       >
-        {editing ? (
-          <>
-            <X className="h-3.5 w-3.5 text-gold" />
-            Done editing
-          </>
-        ) : (
-          <>
-            <ImagePlus className="h-3.5 w-3.5 text-gold" />
-            Edit images
-          </>
-        )}
+        <X className="h-3.5 w-3.5 text-gold" />
+        Done editing
       </button>
 
-      {editing && (
-        <Link
-          href="/admin/images"
-          className="inline-flex items-center rounded-full border border-border bg-background/95 px-3.5 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur-sm transition-colors hover:border-gold"
-        >
-          Manage all images →
-        </Link>
-      )}
+      <Link
+        href="/ligera/images"
+        className="inline-flex items-center rounded-full border border-border bg-background/95 px-3.5 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur-sm transition-colors hover:border-gold"
+      >
+        Manage all images →
+      </Link>
     </div>
   );
 }

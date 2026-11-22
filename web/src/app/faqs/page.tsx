@@ -11,25 +11,17 @@ import {
   buildFaqJsonLd,
   safeJsonLd,
 } from "@/lib/seo/jsonld";
-import { DEFAULT_OG_IMAGE, STUDIO_HOURS_DISPLAY, absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { STUDIO_HOURS_DISPLAY } from "@/lib/seo/site";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Frequently Asked Questions — Candles, Delivery & Studio Pickup",
+export const metadata: Metadata = buildPageMetadata({
+  title: "FAQs — Candles, Lagos Delivery & Studio Pickup",
   description:
-    "Answers about Ligera scented candles, reed diffusers, room sprays, gypsum decor, Lagos & nationwide Nigeria delivery, Gbagada studio pickup, and custom orders.",
-  alternates: {
-    canonical: "/faqs",
-  },
-  openGraph: {
-    title: "FAQs — Ligera Home Fragrance Studio Lagos",
-    description:
-      "Answers about Lagos delivery, nationwide Nigeria shipping, Gbagada pickup (Mon–Sat, 9am–6pm), candle care, and custom orders.",
-    url: absoluteUrl("/faqs"),
-    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
-  },
-};
+    "Answers about Ligera scented candles, reed diffusers, room sprays, gypsum decor, Lagos & nationwide Nigeria delivery, Gbagada pickup, and custom orders.",
+  path: "/faqs",
+});
 
 export default async function FaqsPage() {
   const cmsPage = await getContentPageSafe("faqs");

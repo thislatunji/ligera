@@ -22,6 +22,12 @@ export interface RefreshTokenPayload {
   type: "refresh";
 }
 
+export interface GateTokenPayload {
+  sub: string;
+  role: string;
+  type: "gate";
+}
+
 function base64url(input: Buffer | string): string {
   const buf = typeof input === "string" ? Buffer.from(input) : input;
   return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -40,6 +46,14 @@ export async function signRefreshToken(payload: { sub: string; jti: string }): P
   const now = Math.floor(Date.now() / 1000);
   const body = base64url(JSON.stringify({ ...payload, type: "refresh", iat: now, exp: now + REFRESH_TOKEN_MAX_AGE }));
   const signature = crypto.createHmac("sha256", getSecret("refresh")).update(`${header}.${body}`).digest();
+  return `${header}.${body}.${base64url(signature)}`;
+}
+
+export async function signGateToken(payload: { sub: string; role: string }): Promise<string> {
+  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const now = Math.floor(Date.now() / 1000);
+  const body = base64url(JSON.stringify({ ...payload, type: "gate", iat: now, exp: now + REFRESH_TOKEN_MAX_AGE }));
+  const signature = crypto.createHmac("sha256", getSecret("access")).update(`${header}.${body}`).digest();
   return `${header}.${body}.${base64url(signature)}`;
 }
 

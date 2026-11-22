@@ -13,6 +13,7 @@ export type Product = {
   name: string;
   notes: string;
   category: string;
+  categorySlug?: string;
   price: number;
   stock: number;
   imageUrl: string | null;
@@ -30,17 +31,33 @@ export const productCategories = categories.filter((c) => c !== "All");
 
 const fallbacks: Record<string, string> = {
   Candles: assetSrc(candle),
+  "Scented Candles": assetSrc(candle),
+  "scented-candles": assetSrc(candle),
   Diffusers: assetSrc(diffuser),
+  "Reed Diffusers": assetSrc(diffuser),
+  "reed-diffusers": assetSrc(diffuser),
   "Room Sprays": assetSrc(spray),
+  "Room & Linen Sprays": assetSrc(spray),
+  "Room and Linen Spray": assetSrc(spray),
+  "room-linen-sprays": assetSrc(spray),
   "Gypsum Decor": assetSrc(gypsum),
+  "gypsum-decor": assetSrc(gypsum),
 };
 
-export const productImage = (product: { category: string; imageUrl?: string | null }) => {
+export const productImage = (product: {
+  category: string;
+  categorySlug?: string;
+  imageUrl?: string | null;
+}) => {
   const url = product.imageUrl?.trim();
   if (url && !url.startsWith("/_next/static/media/p-")) {
     return url;
   }
-  return fallbacks[product.category] ?? assetSrc(candle);
+  return (
+    fallbacks[product.category] ??
+    (product.categorySlug ? fallbacks[product.categorySlug] : undefined) ??
+    assetSrc(candle)
+  );
 };
 
 export const naira = (value: number) =>

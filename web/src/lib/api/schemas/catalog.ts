@@ -8,7 +8,7 @@ export const ProductQuery = z.object({
   maxPrice: z.coerce.number().int().min(0).optional(),
   sort: z.enum(["newest", "price-asc", "price-desc", "popular"]).default("newest"),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(24).default(24),
+  limit: z.coerce.number().int().min(1).max(100).default(24),
 });
 export type ProductQuery = z.infer<typeof ProductQuery>;
 

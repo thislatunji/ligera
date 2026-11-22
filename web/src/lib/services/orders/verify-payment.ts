@@ -1,7 +1,10 @@
 import { Order } from "@/lib/db/models/order";
 import { Payment } from "@/lib/db/models/payment";
 import { enqueueNotification } from "@/lib/services/notifications/enqueue";
-import { verifyTransaction } from "@/integrations/flutterwave";
+import {
+  verifyTransaction,
+  verifyTransactionByReference,
+} from "@/lib/integrations/flutterwave";
 import { commitPaidOrder } from "@/lib/services/checkout/paid-commit";
 import type { VerifyPaymentResult } from "@/lib/api/types/orders";
 
@@ -25,10 +28,15 @@ export async function verifyPayment(orderId: string): Promise<VerifyPaymentResul
     };
   }
 
-  const payment = await Payment.findOne({ orderId: order._id }) || await Payment.findOne({ reference: order.orderNumber });
+  const payment =
+    (await Payment.findOne({ orderId: order._id })) ||
+    (await Payment.findOne({ reference: order.orderNumber }));
 
   try {
-    const verifyResult = await verifyTransaction(payment?.linkId || payment?.reference || order.orderNumber);
+    const verifyResult =
+      payment?.externalRef && /^\d+$/.test(String(payment.externalRef))
+        ? await verifyTransaction(payment.externalRef)
+        : await verifyTransactionByReference(payment?.reference || order.orderNumber);
 
     // Check if successful
     if (verifyResult?.status === "successful" || verifyResult?.data?.status === "successful") {

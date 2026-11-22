@@ -14,7 +14,10 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "admin:seed": "node scripts/admin-user.mjs",
+    "admin:reset-password": "node scripts/admin-user.mjs --reset",
+    "db:seed": "node scripts/seed-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -4,6 +4,7 @@ import { Variant } from "@/lib/db/models/variant";
 import { Category } from "@/lib/db/models/category";
 import { ActivityLog } from "@/lib/db/models/activityLog";
 import { slugify } from "@/lib/utils/slug";
+import { buildCloudinaryImageUrl } from "@/lib/cloudinary/url";
 import mongoose from "mongoose";
 
 async function ensureUniqueSlug(name: string, excludeId?: string) {
@@ -128,8 +129,8 @@ export async function updateProduct(id: string, data: any, userId: string) {
 
   const before = product.toObject();
 
-  // Check slug change on published
-  if (data.name && product.status === "published") {
+  // Check slug change on published only when name actually changed
+  if (data.name && data.name.trim() !== product.name && product.status === "published") {
     const newSlug = slugify(data.name);
     if (newSlug !== product.slug) {
       const err: any = new Error("Slug cannot be changed on published products.");
@@ -137,6 +138,7 @@ export async function updateProduct(id: string, data: any, userId: string) {
       err.status = 409;
       throw err;
     }
+    product.name = data.name.trim();
   } else if (data.name && product.status !== "published") {
     product.name = data.name;
     product.slug = await ensureUniqueSlug(data.name, id);
@@ -172,6 +174,13 @@ export async function updateProduct(id: string, data: any, userId: string) {
   await product.save();
 
   // Handle variants if passed
+  if (Array.isArray(data.removedVariantIds) && data.removedVariantIds.length > 0) {
+    await Variant.deleteMany({
+      _id: { $in: data.removedVariantIds },
+      productId: product._id,
+    });
+  }
+
   if (data.variants) {
     // Check SKU uniqueness against other variants
     for (const v of data.variants) {
@@ -185,18 +194,21 @@ export async function updateProduct(id: string, data: any, userId: string) {
         }
       }
     }
-    // For simplicity in this implementation, update/create variants
+    // Update/create variants
     for (const v of data.variants) {
       if (v.id) {
-        await Variant.findByIdAndUpdate(v.id, {
+        const patch: Record<string, any> = {
           label: v.label,
-          sku: v.sku?.toUpperCase(),
           price: v.price,
           salePrice: v.salePrice ?? null,
           lowStockThreshold: v.lowStockThreshold ?? 5,
           costPrice: v.costPrice ?? 0,
           active: v.active ?? true,
-        });
+        };
+        if (v.sku) {
+          patch.sku = v.sku.toUpperCase();
+        }
+        await Variant.findByIdAndUpdate(v.id, patch);
       } else {
         await Variant.create({
           productId: product._id,
@@ -493,24 +505,117 @@ export async function deleteVariant(id: string, userId: string) {
   return { ok: true };
 }
 
+export async function getAdminProductById(id: string, role?: string) {
+  await connectDb();
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return null;
+  }
+  const product: any = await Product.findById(id).lean();
+  if (!product) {
+    return null;
+  }
+
+  const [variants, category] = await Promise.all([
+    Variant.find({ productId: product._id }).sort({ createdAt: 1 }).lean(),
+    product.categoryId ? Category.findById(product.categoryId).lean() : Promise.resolve(null),
+  ]);
+
+  return {
+    id: product._id.toString(),
+    name: product.name,
+    slug: product.slug,
+    description: product.description || "",
+    status: product.status,
+    categoryId: product.categoryId ? product.categoryId.toString() : null,
+    category: category
+      ? {
+          id: (category as any)._id.toString(),
+          name: (category as any).name,
+          slug: (category as any).slug,
+        }
+      : null,
+    spaceTagIds: (product.spaceTagIds || []).map((s: any) => s.toString()),
+    scentNotes: product.scentNotes || { top: [], heart: [], base: [] },
+    ingredients: product.ingredients || "",
+    safetyInfo: product.safetyInfo || "",
+    burnTime: product.burnTime || "",
+    dimensions: product.dimensions || "",
+    finish: product.finish || "",
+    madeToOrder: Boolean(product.madeToOrder),
+    leadTimeDays: product.leadTimeDays || 0,
+    images: (product.images || []).map((img: any, idx: number) => ({
+      publicId: img.publicId || "",
+      url: img.publicId ? buildCloudinaryImageUrl(img.publicId, 800) || img.publicId : "",
+      alt: img.alt || product.name,
+      width: img.width || 1200,
+      height: img.height || 1200,
+      position: img.position ?? idx,
+    })),
+    pairsWith: (product.pairsWith || []).map((p: any) => p.toString()),
+    seo: product.seo || { title: "", metaDescription: "", ogImage: "" },
+    featured: Boolean(product.featured),
+    sortOrder: product.sortOrder || 0,
+    variants: variants.map((v: any) => {
+      const available = (v.stockQty || 0) - (v.heldQty || 0);
+      const base: any = {
+        id: v._id.toString(),
+        label: v.label || "Standard",
+        sku: v.sku,
+        price: v.price,
+        salePrice: v.salePrice ?? null,
+        stockQty: v.stockQty || 0,
+        heldQty: v.heldQty || 0,
+        available,
+        lowStockThreshold: v.lowStockThreshold ?? 5,
+        active: v.active !== false,
+      };
+      if (role === "owner") {
+        base.costPrice = v.costPrice || 0;
+      }
+      return base;
+    }),
+    createdAt: product.createdAt?.toISOString ? product.createdAt.toISOString() : new Date().toISOString(),
+    updatedAt: product.updatedAt?.toISOString ? product.updatedAt.toISOString() : new Date().toISOString(),
+  };
+}
+
 export async function listAdminProducts(query: any, role?: string) {
   await connectDb();
-  const { q, status, lowStock, categoryId, page = 1, limit = 50 } = query;
+  const { q, status, lowStock, categoryId } = query;
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+  const onlyLowStock = lowStock === true || lowStock === "true";
+
   const filter: any = {};
   if (status) filter.status = status;
-  if (categoryId) filter.categoryId = new mongoose.Types.ObjectId(categoryId);
-  if (q) {
-    filter.$or = [{ name: { $regex: q, $options: "i" } }];
+  if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
+    filter.categoryId = new mongoose.Types.ObjectId(categoryId);
+  }
+  if (q && String(q).trim()) {
+    filter.$or = [{ name: { $regex: String(q).trim(), $options: "i" } }];
   }
 
   const skip = (page - 1) * limit;
   const [products, total] = await Promise.all([
-    Product.find(filter).skip(skip).limit(limit).lean(),
+    Product.find(filter).sort({ updatedAt: -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
     Product.countDocuments(filter),
   ]);
 
   const productIds = products.map((p: any) => p._id);
-  const variants = await Variant.find({ productId: { $in: productIds } }).lean();
+  const categoryIds = Array.from(
+    new Set(products.map((p: any) => p.categoryId?.toString()).filter(Boolean))
+  ).map((id) => new mongoose.Types.ObjectId(id));
+
+  const [variants, categories] = await Promise.all([
+    Variant.find({ productId: { $in: productIds } }).lean(),
+    categoryIds.length > 0 ? Category.find({ _id: { $in: categoryIds } }).lean() : Promise.resolve([]),
+  ]);
+
+  const catMap = new Map<string, any>();
+  for (const c of categories as any[]) {
+    catMap.set(c._id.toString(), c);
+  }
+
   const vByProd: Record<string, any[]> = {};
   for (const v of variants) {
     const key = v.productId.toString();
@@ -523,15 +628,34 @@ export async function listAdminProducts(query: any, role?: string) {
     let isLowStock = false;
     for (const v of pVars) {
       const available = (v.stockQty || 0) - (v.heldQty || 0);
-      if (available > 0 && available <= (v.lowStockThreshold || 5)) isLowStock = true;
-      if (available <= 0 && product.status === "published") isLowStock = true; // sold out counts?
+      const threshold = v.lowStockThreshold ?? 5;
+      if (available > 0 && available <= threshold) isLowStock = true;
+      if (available <= 0 && product.status === "published") isLowStock = true;
     }
+    const cat = product.categoryId ? catMap.get(product.categoryId.toString()) : null;
     const row: any = {
       id: product._id.toString(),
       name: product.name,
       slug: product.slug,
+      description: product.description || "",
       status: product.status,
-      category: product.categoryId ? { id: product.categoryId.toString(), name: "" } : undefined,
+      categoryId: product.categoryId ? product.categoryId.toString() : null,
+      category: cat
+        ? { id: cat._id.toString(), name: cat.name, slug: cat.slug }
+        : product.categoryId
+          ? { id: product.categoryId.toString(), name: "", slug: "" }
+          : undefined,
+      featured: Boolean(product.featured),
+      madeToOrder: Boolean(product.madeToOrder),
+      sortOrder: product.sortOrder || 0,
+      images: (product.images || []).map((img: any, idx: number) => ({
+        publicId: img.publicId || "",
+        url: img.publicId ? buildCloudinaryImageUrl(img.publicId, 400) || img.publicId : "",
+        alt: img.alt || product.name,
+        width: img.width || 1200,
+        height: img.height || 1200,
+        position: img.position ?? idx,
+      })),
       variants: pVars.map((v: any) => {
         const available = (v.stockQty || 0) - (v.heldQty || 0);
         const base: any = {
@@ -543,7 +667,7 @@ export async function listAdminProducts(query: any, role?: string) {
           stockQty: v.stockQty || 0,
           heldQty: v.heldQty || 0,
           available,
-          lowStockThreshold: v.lowStockThreshold || 5,
+          lowStockThreshold: v.lowStockThreshold ?? 5,
           active: v.active !== false,
         };
         if (role === "owner") {
@@ -553,9 +677,7 @@ export async function listAdminProducts(query: any, role?: string) {
       }),
       lowStock: isLowStock,
       imageThumb: product.images?.[0]?.publicId
-        ? /^(https?:\/\/|\/|data:)/.test(product.images[0].publicId)
-          ? product.images[0].publicId
-          : `https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_200/${product.images[0].publicId}.jpg`
+        ? buildCloudinaryImageUrl(product.images[0].publicId, 200) || product.images[0].publicId
         : undefined,
       updatedAt: product.updatedAt?.toISOString ? product.updatedAt.toISOString() : new Date().toISOString(),
     };
@@ -563,9 +685,9 @@ export async function listAdminProducts(query: any, role?: string) {
   });
 
   let filteredData = data;
-  if (lowStock) {
+  if (onlyLowStock) {
     filteredData = data.filter((d: any) => d.lowStock);
   }
 
-  return { data: filteredData, meta: { page, limit, total } };
+  return { data: filteredData, meta: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) } };
 }

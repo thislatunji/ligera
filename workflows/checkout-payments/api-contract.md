@@ -8,7 +8,7 @@ Shared conventions: `workflows/README.md` §3.5. All endpoints in this domain ar
 - **Money:** integer Naira. **tx_ref:** equals `orderNumber` (`LG-000123`).
 - **Flutterwave env:** `FLW_PUBLIC_KEY`, `FLW_SECRET_KEY`, `FLW_SECRET_HASH` (webhook
   `verif-hash`), `APP_URL` (redirect base).
-- **Rate limits:** `POST /api/checkout/orders` 10/min/IP; `POST /api/orders/lookup` 20/min/IP.
+- **Rate limits:** `POST /api/checkout/orders` 10/min/IP; `GET /api/checkout/orders/:orderNumber/status` 60/min/IP; `GET /api/checkout/orders/:orderNumber/verify-status` 30/min/IP; `POST /api/orders/lookup` 20/min/IP.
 
 ## 2. Endpoints Matrix
 
@@ -17,6 +17,8 @@ Shared conventions: `workflows/README.md` §3.5. All endpoints in this domain ar
 | GET | `/api/delivery-zones` | Active zones (name, fee, etaText) | public | — | 200 `DeliveryZone[]` |
 | POST | `/api/checkout/quote` | Live-priced cart summary; no hold | public | `QuoteRequest` | 200 `QuoteSummary` |
 | POST | `/api/checkout/orders` | Create order, reserve stock, return payment link | public | `CheckoutRequest` | 201 `CheckoutResult` |
+| GET | `/api/checkout/orders/:orderNumber/status` | Public no-PII payment/order status poll | public | — | 200 `PublicOrderPaymentView` |
+| GET | `/api/checkout/orders/:orderNumber/verify-status` | Public active Flutterwave verification + status | public | `?transaction_id=` (opt) | 200 `PublicOrderPaymentView` |
 | POST | `/api/webhooks/flutterwave` | Signed payment notification | public (signature) | `FlutterwaveWebhook` | 200 `{ ok: true }` |
 | POST | `/api/orders/lookup` | Order status for confirmation/track | public | `OrderLookupRequest` | 200 `OrderStatusView` |
 
@@ -123,6 +125,22 @@ export interface OrderStatusView {             // FR-017 confirmation + FR-018 t
   expectedDeliveryWindow: string;
   placedAt: string;                            // ISO, WAT displayed
   giftNote?: string;
+}
+
+export interface PublicOrderPaymentView {      // Public guest callback view (strictly no PII)
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  deliveryMethod: "delivery" | "pickup";
+  deliveryZoneName: string;
+  items: { name: string; qty: number; unitPrice: number }[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  expectedDeliveryWindow: string;
+  placedAt: string;
+  paidAt: string | null;
+  paymentUrl: string | null;                   // Returned only while status === "pending_payment"
 }
 ```
 
@@ -245,6 +263,44 @@ paths:
         "409": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
         "502": { $ref: "#/components/responses/Error" }
+  /api/checkout/orders/{orderNumber}/status:
+    get:
+      summary: Public no-PII order payment status for confirmation polling
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string, pattern: '^LG-\d{6}$' }
+      responses:
+        "200":
+          description: PublicOrderPaymentView (no customer PII)
+          content:
+            application/json:
+              schema: { type: object }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /api/checkout/orders/{orderNumber}/verify-status:
+    get:
+      summary: Actively verify Flutterwave payment server-side for guest callback page
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string, pattern: '^LG-\d{6}$' }
+        - in: query
+          name: transaction_id
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: PublicOrderPaymentView (no customer PII)
+          content:
+            application/json:
+              schema: { type: object }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
   /api/webhooks/flutterwave:
     post:
       summary: Flutterwave payment notification (verif-hash gated)

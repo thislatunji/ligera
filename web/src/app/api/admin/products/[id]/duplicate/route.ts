@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/guard";
 import { duplicateProduct } from "@/lib/services/catalog/admin";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
-    const result = await duplicateProduct(params.id, auth.userId);
+    const { id } = await Promise.resolve(params);
+    const result = await duplicateProduct(id, auth.userId);
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {
     if (error.code === "NOT_FOUND") {

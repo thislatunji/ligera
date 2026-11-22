@@ -5,23 +5,16 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getContentPageSafe } from "@/lib/seo/catalog.server";
 import { DEFAULT_TERMS_SECTIONS } from "@/lib/seo/content-defaults";
 import { buildBreadcrumbJsonLd, safeJsonLd } from "@/lib/seo/jsonld";
-import { absoluteUrl } from "@/lib/seo/site";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Terms & Conditions",
   description:
     "Terms of service for browsing and ordering scented candles, reed diffusers, room sprays, and gypsum decor on ligerascents.com.",
-  alternates: {
-    canonical: "/terms",
-  },
-  openGraph: {
-    title: "Terms & Conditions | Ligera",
-    description: "Terms of service for ligerascents.com.",
-    url: absoluteUrl("/terms"),
-  },
-};
+  path: "/terms",
+});
 
 export default async function TermsPage() {
   const cmsPage = await getContentPageSafe("terms");

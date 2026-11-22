@@ -66,7 +66,7 @@ export function FaqAccordion({
               </span>
             </span>
           </AccordionTrigger>
-          <AccordionContent className="px-5 pb-5 pt-0 sm:px-7 sm:pb-6">
+          <AccordionContent forceMount className="px-5 pb-5 pt-0 sm:px-7 sm:pb-6">
             <div className="sm:pl-11">
               <p className="text-sm leading-relaxed text-ink/75 sm:text-base">
                 {faq.answer}

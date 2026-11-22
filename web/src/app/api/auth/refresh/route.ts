@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/db/connect";
 import { User } from "@/lib/db/models/user";
-import { verifyRefreshToken, signAccessToken, signRefreshToken, ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE } from "@/lib/auth/jwt";
+import { verifyRefreshToken, signAccessToken, signRefreshToken, signGateToken, ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE } from "@/lib/auth/jwt";
 import { isJtiDenied, denyJti } from "@/lib/auth/refreshTokens";
 import { randomUUID } from "crypto";
 
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
 
     const accessToken = await signAccessToken({ sub: user._id.toString(), role: user.role });
     const newRefreshToken = await signRefreshToken({ sub: user._id.toString(), jti: randomUUID() });
+    const gateToken = await signGateToken({ sub: user._id.toString(), role: user.role });
 
     const response = NextResponse.json({ ok: true }, { status: 200 });
 
@@ -55,6 +56,14 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       maxAge: REFRESH_TOKEN_MAX_AGE,
       path: "/api/auth",
+    });
+
+    response.cookies.set("lg_session", gateToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: REFRESH_TOKEN_MAX_AGE,
+      path: "/ligera",
     });
 
     return response;

@@ -3,10 +3,14 @@ import { requireAuth } from "@/lib/auth/guard";
 import { adjustStock } from "@/lib/services/catalog/stock";
 import { StockAdjustmentInput } from "@/lib/api/schemas/catalog";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner", "staff"]);
   if (auth instanceof NextResponse) return auth;
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const parsed = StockAdjustmentInput.safeParse(body);
     if (!parsed.success) {
@@ -15,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         { status: 400 }
       );
     }
-    const result = await adjustStock(params.id, parsed.data, auth.userId);
+    const result = await adjustStock(id, parsed.data, auth.userId);
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     if (error.code === "STOCK_NEGATIVE") {

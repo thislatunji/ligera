@@ -4,15 +4,43 @@ import { User } from "@/lib/db/models/user";
 import { ActivityLog } from "@/lib/db/models/activityLog";
 import { LoginRequest } from "@/lib/api/schemas/auth";
 import { comparePassword } from "@/lib/auth/bcrypt";
-import { signAccessToken, signRefreshToken, ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE } from "@/lib/auth/jwt";
+import { signAccessToken, signRefreshToken, signGateToken, ACCESS_TOKEN_MAX_AGE, REFRESH_TOKEN_MAX_AGE } from "@/lib/auth/jwt";
 import { verifyTotp, decryptSecret } from "@/lib/auth/totp";
 import { randomUUID } from "crypto";
 
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;
+const IP_RATE_WINDOW_MS = 15 * 60 * 1000;
+const IP_RATE_LIMIT = 25;
+const loginIpWindows = new Map<string, number[]>();
+
+function isIpRateLimited(ip: string): boolean {
+  if (process.env.NODE_ENV === "test") return false;
+  const now = Date.now();
+  const cutoff = now - IP_RATE_WINDOW_MS;
+  const recent = (loginIpWindows.get(ip) || []).filter((ts) => ts > cutoff);
+  if (recent.length >= IP_RATE_LIMIT) {
+    loginIpWindows.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  loginIpWindows.set(ip, recent);
+  return false;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    if (isIpRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again shortly.", code: "RATE_LIMITED" },
+        { status: 429 }
+      );
+    }
+
     await connectDb();
     const body = await request.json();
     const parsed = LoginRequest.safeParse(body);
@@ -112,6 +140,7 @@ export async function POST(request: NextRequest) {
 
     const accessToken = await signAccessToken({ sub: user._id.toString(), role: user.role });
     const refreshToken = await signRefreshToken({ sub: user._id.toString(), jti: randomUUID() });
+    const gateToken = await signGateToken({ sub: user._id.toString(), role: user.role });
 
     const response = NextResponse.json(
       {
@@ -140,6 +169,14 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       maxAge: REFRESH_TOKEN_MAX_AGE,
       path: "/api/auth",
+    });
+
+    response.cookies.set("lg_session", gateToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: REFRESH_TOKEN_MAX_AGE,
+      path: "/ligera",
     });
 
     // Also set as headers for test compatibility

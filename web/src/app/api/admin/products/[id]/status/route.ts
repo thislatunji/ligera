@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/guard";
 import { updateProductStatus } from "@/lib/services/catalog/admin";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
-    const result = await updateProductStatus(params.id, body.status, auth.userId);
+    const result = await updateProductStatus(id, body.status, auth.userId);
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     if (error.code === "INVALID_TRANSITION") {

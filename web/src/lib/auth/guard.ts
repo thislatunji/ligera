@@ -8,6 +8,7 @@ export interface AuthContext {
   role: "owner" | "staff";
   email: string;
   name: string;
+  twoFactorEnabled?: boolean;
 }
 
 export async function requireAuth(request: NextRequest, allowedRoles?: ("owner" | "staff")[]): Promise<AuthContext | NextResponse> {
@@ -30,6 +31,7 @@ export async function requireAuth(request: NextRequest, allowedRoles?: ("owner" 
       role: user.role,
       email: user.email,
       name: user.name,
+      twoFactorEnabled: Boolean(user.twoFactorEnabled),
     };
   } catch (error) {
     return NextResponse.json({ error: "Please sign in again.", code: "AUTH_UNAUTHENTICATED" }, { status: 401 });

@@ -4,7 +4,10 @@ import { RefundInput } from "@/lib/api/schemas/orders";
 import { refundOrder } from "@/lib/services/orders/refund";
 import { TransitionError } from "@/lib/services/orders/transition";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) {
     // If it's a 403 from requireAuth due to role, make sure it's AUTH_FORBIDDEN as per spec
@@ -15,13 +18,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json().catch(() => ({}));
     const parsed = RefundInput.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed.", code: "VALIDATION_ERROR", details: parsed.error.issues }, { status: 400 });
     }
 
-    const result = await refundOrder(params.id, auth, parsed.data);
+    const result = await refundOrder(id, auth, parsed.data);
     return NextResponse.json(result);
   } catch (error: any) {
     if (error.code === "AUTH_FORBIDDEN" || error.status === 403) {

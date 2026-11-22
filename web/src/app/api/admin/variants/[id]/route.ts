@@ -3,12 +3,16 @@ import { requireAuth } from "@/lib/auth/guard";
 import { updateVariant, deleteVariant } from "@/lib/services/catalog/admin";
 import { VariantInput } from "@/lib/api/schemas/catalog";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
-    const result = await updateVariant(params.id, body, auth.userId);
+    const result = await updateVariant(id, body, auth.userId);
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     if (error.code === "SKU_TAKEN") {
@@ -24,11 +28,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
-    const result = await deleteVariant(params.id, auth.userId);
+    const { id } = await Promise.resolve(params);
+    const result = await deleteVariant(id, auth.userId);
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     if (error.code === "VARIANT_IN_USE") {

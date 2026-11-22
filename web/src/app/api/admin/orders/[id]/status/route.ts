@@ -3,18 +3,22 @@ import { requireAuth } from "@/lib/auth/guard";
 import { StatusUpdate } from "@/lib/api/schemas/orders";
 import { transitionOrder, TransitionError } from "@/lib/services/orders/transition";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   const auth = await requireAuth(request, ["owner", "staff"]);
   if (auth instanceof NextResponse) return auth;
 
   try {
+    const { id } = await Promise.resolve(params);
     const body = await request.json();
     const parsed = StatusUpdate.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed.", code: "VALIDATION_ERROR", details: parsed.error.issues }, { status: 400 });
     }
 
-    const order = await transitionOrder(params.id, parsed.data.status as any, auth, {
+    const order = await transitionOrder(id, parsed.data.status as any, auth, {
       note: parsed.data.note,
       emailCustomer: parsed.data.emailCustomer,
     });

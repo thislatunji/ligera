@@ -4,6 +4,7 @@ import { Providers } from "@/components/Providers";
 import { buildSiteGraphJsonLd, safeJsonLd } from "@/lib/seo/jsonld";
 import {
   DEFAULT_OG_IMAGE,
+  DEFAULT_OG_IMAGE_ALT,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
@@ -22,40 +23,39 @@ const inter = Inter({
   display: "swap",
 });
 
+const DEFAULT_TITLE = "Ligera — Scented Candles, Reed Diffusers & Gypsum Decor";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Ligera — Luxury Scented Candles, Reed Diffusers & Gypsum Decor in Lagos",
+    default: DEFAULT_TITLE,
     template: "%s | Ligera",
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   icons: {
     icon: "/favicon.png",
-    apple: "/favicon.png",
-  },
-  alternates: {
-    canonical: "/",
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     type: "website",
     locale: "en_NG",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "Ligera — Luxury Scented Candles, Reed Diffusers & Gypsum Decor in Lagos",
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     images: [
       {
         url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Ligera — Hand-poured scented candles, reed diffusers, room sprays, and gypsum decor in Lagos",
+        alt: DEFAULT_OG_IMAGE_ALT,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ligera — Luxury Scented Candles, Reed Diffusers & Gypsum Decor in Lagos",
+    title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE],
   },

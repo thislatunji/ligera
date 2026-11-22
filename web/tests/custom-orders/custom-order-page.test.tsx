@@ -4,6 +4,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
+if (typeof window !== "undefined" && typeof window.ResizeObserver === "undefined") {
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+if (typeof Element !== "undefined") {
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+  }
+  if (!Element.prototype.setPointerCapture) {
+    Element.prototype.setPointerCapture = () => {};
+  }
+  if (!Element.prototype.releasePointerCapture) {
+    Element.prototype.releasePointerCapture = () => {};
+  }
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+}
+
 vi.mock("next/image", () => ({
   default: ({ src, alt, ...props }: any) => {
     const resolvedSrc = typeof src === "string" ? src : src?.src ?? "";
@@ -54,6 +77,13 @@ describe("CustomOrderForm", () => {
   const createOpenSpy = () => vi.spyOn(window, "open").mockImplementation(() => null);
   let openSpy: ReturnType<typeof createOpenSpy>;
 
+  const selectProductCategory = (label: string) => {
+    const trigger = screen.getByRole("combobox", { name: /^product$/i });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("option", { name: label }));
+    return trigger;
+  };
+
   beforeEach(() => {
     window.history.replaceState({}, "", "/custom-orders");
     openSpy = createOpenSpy();
@@ -68,18 +98,10 @@ describe("CustomOrderForm", () => {
   it("renders the product dropdown with all 5 categories, details textarea, and Make Custom Order button", () => {
     render(<CustomOrderForm />);
 
-    const select = screen.getByLabelText(/product/i) as HTMLSelectElement;
-    expect(select.tagName).toBe("SELECT");
-
-    const optionValues = Array.from(select.options).map((o) => o.value);
-    expect(optionValues).toEqual([
-      "",
-      "Candles",
-      "Diffusers",
-      "Room Sprays",
-      "Gypsum Decor",
-      "Curated Bundle",
-    ]);
+    const trigger = screen.getByLabelText(/product/i);
+    expect(trigger.getAttribute("role")).toBe("combobox");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(trigger.textContent).toContain("Select a product…");
 
     const textarea = screen.getByLabelText(/further details/i) as HTMLTextAreaElement;
     expect(textarea.tagName).toBe("TEXTAREA");
@@ -88,28 +110,52 @@ describe("CustomOrderForm", () => {
     expect(submitBtn).toBeDefined();
     expect(screen.queryByText(/Continues on WhatsApp/i)).toBeNull();
     expect(
-      screen.getByText(/chat with our studio on WhatsApp for pricing and delivery time\./i),
+      screen.getByText(/chat with our studio on WhatsApp for pricing and delivery timelines\./i),
     ).toBeDefined();
+
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("listbox")).toBeDefined();
+
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(CUSTOM_ORDER_CATEGORIES.length);
+    const optionLabels = options.map((option) => {
+      const labelId = option.getAttribute("aria-labelledby");
+      return labelId ? document.getElementById(labelId)?.textContent : option.textContent;
+    });
+    expect(optionLabels).toEqual([
+      "Candles",
+      "Diffusers",
+      "Room Sprays",
+      "Gypsum Decor",
+      "Curated Bundle",
+    ]);
+    for (const cat of CUSTOM_ORDER_CATEGORIES) {
+      expect(screen.getByRole("option", { name: cat.label })).toBeDefined();
+      expect(screen.getByText(cat.description)).toBeDefined();
+    }
   });
 
   it("validates empty form and whitespace-only details without calling window.open", () => {
     render(<CustomOrderForm />);
 
+    const trigger = screen.getByRole("combobox", { name: /^product$/i });
     const submitBtn = screen.getByRole("button", { name: /^Make Custom Order$/i });
     fireEvent.click(submitBtn);
 
+    expect(trigger.getAttribute("aria-invalid")).toBe("true");
     const alerts = screen.getAllByRole("alert");
     expect(alerts).toHaveLength(2);
     expect(screen.getByText(/Please select a product to custom order\./i)).toBeDefined();
     expect(screen.getByText(/Please provide details for your custom order\./i)).toBeDefined();
     expect(openSpy).not.toHaveBeenCalled();
 
-    const select = screen.getByLabelText(/product/i);
     const textarea = screen.getByLabelText(/further details/i);
-    fireEvent.change(select, { target: { value: "Candles" } });
+    selectProductCategory("Candles");
     fireEvent.change(textarea, { target: { value: "   \n  " } });
     fireEvent.click(submitBtn);
 
+    expect(trigger.getAttribute("aria-invalid")).toBe("false");
     expect(screen.queryByText(/Please select a product to custom order\./i)).toBeNull();
     expect(screen.getByText(/Please provide details for your custom order\./i)).toBeDefined();
     expect(openSpy).not.toHaveBeenCalled();
@@ -118,20 +164,22 @@ describe("CustomOrderForm", () => {
   it("updates preview on selection, launches WhatsApp on submit, clears stale link on edit, and resets form", () => {
     render(<CustomOrderForm />);
 
-    const select = screen.getByLabelText(/product/i) as HTMLSelectElement;
+    const trigger = screen.getByLabelText(/product/i);
     const textarea = screen.getByLabelText(/further details/i) as HTMLTextAreaElement;
     const submitBtn = screen.getByRole("button", { name: /^Make Custom Order$/i });
 
     expect(screen.getByText("Bespoke studio")).toBeDefined();
     expect(screen.getByText(/Made to order in Lagos/i)).toBeDefined();
 
-    fireEvent.change(select, { target: { value: "Candles" } });
+    selectProductCategory("Candles");
 
     const candlesOption = CUSTOM_ORDER_CATEGORIES.find((c) => c.value === "Candles")!;
+    expect(trigger.textContent).toContain("Candles");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText(/Selected family/i)).toBeNull();
     expect(screen.queryByText("Bespoke studio")).toBeNull();
     expect(screen.getByRole("heading", { name: "Candles" })).toBeDefined();
-    expect(screen.getByText(candlesOption.description)).toBeDefined();
+    expect(screen.getAllByText(candlesOption.description)).toHaveLength(2);
 
     const detailsText = "30 Amber Hush candles with custom gold wedding labels";
     fireEvent.change(textarea, { target: { value: detailsText } });
@@ -155,7 +203,7 @@ describe("CustomOrderForm", () => {
     expect(screen.getByRole("link", { name: /Open WhatsApp again/i })).toBeDefined();
 
     fireEvent.click(screen.getByRole("button", { name: /Clear form/i }));
-    expect(select.value).toBe("");
+    expect(trigger.textContent).toContain("Select a product…");
     expect(textarea.value).toBe("");
     expect(screen.queryByRole("link", { name: /Open WhatsApp again/i })).toBeNull();
   });
@@ -164,9 +212,14 @@ describe("CustomOrderForm", () => {
     window.history.replaceState({}, "", "/custom-orders?product=Diffusers");
     render(<CustomOrderForm />);
 
-    const select = screen.getByLabelText(/product/i) as HTMLSelectElement;
-    expect(select.value).toBe("Diffusers");
+    const trigger = screen.getByLabelText(/product/i);
+    expect(trigger.textContent).toContain("Diffusers");
     expect(screen.getByRole("heading", { name: "Diffusers" })).toBeDefined();
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("option", { name: "Diffusers" }).getAttribute("data-state")).toBe(
+      "checked",
+    );
   });
 });
 

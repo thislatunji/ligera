@@ -3,11 +3,15 @@ import { requireAuth } from "@/lib/auth/guard";
 import { getContentPage, updateContentPage } from "@/lib/services/admin/content";
 import { ContentPageInput } from "@/lib/api/schemas/admin";
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> | { slug: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
-    const page = await getContentPage(params.slug, true);
+    const { slug } = await Promise.resolve(params);
+    const page = await getContentPage(slug, true);
     return NextResponse.json(page, { status: 200 });
   } catch (error: any) {
     if (error.code === "NOT_FOUND") {
@@ -17,16 +21,20 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> | { slug: string } }
+) {
   const auth = await requireAuth(request, ["owner"]);
   if (auth instanceof NextResponse) return auth;
   try {
+    const { slug } = await Promise.resolve(params);
     const body = await request.json();
     const parsed = ContentPageInput.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed.", code: "VALIDATION_ERROR", details: parsed.error.issues }, { status: 400 });
     }
-    const page = await updateContentPage(params.slug, parsed.data, auth.userId);
+    const page = await updateContentPage(slug, parsed.data, auth.userId);
     return NextResponse.json(page, { status: 200 });
   } catch (error: any) {
     if (error.code === "NOT_FOUND") {

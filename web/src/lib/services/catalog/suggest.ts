@@ -1,5 +1,6 @@
 import { connectDb } from "@/lib/db/connect";
 import { Product } from "@/lib/db/models/product";
+import { buildCloudinaryImageUrl } from "@/lib/cloudinary/url";
 
 export async function suggest(q: string) {
   await connectDb();
@@ -29,9 +30,9 @@ export async function suggest(q: string) {
     const img = p.images && p.images[0];
     let imageUrl = "";
     if (img?.publicId) {
-      imageUrl = `https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_400/${img.publicId}.jpg`;
+      imageUrl = buildCloudinaryImageUrl(img.publicId, 400);
     } else if (typeof img === "string") {
-      imageUrl = img;
+      imageUrl = buildCloudinaryImageUrl(img, 400);
     }
     return {
       slug: p.slug,
