@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import mark from "@/assets/ligera-mark-gold.png";
+import type { AdminUser } from "@/lib/admin/client";
 import { useLigeraAdmin } from "./LigeraAdminContext";
 import { StealthLoginView } from "./StealthLoginView";
 import { Button } from "@/components/ui/button";
@@ -77,23 +78,15 @@ type NavSection = {
   items: NavItem[];
 };
 
-function ShellContent({ children }: { children: ReactNode }) {
+function ShellContent({ user, children }: { user: AdminUser; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, authChecked, isOwner, badges, signOut } = useLigeraAdmin();
+  const { isOwner, badges, signOut } = useLigeraAdmin();
   const { setOpenMobile } = useSidebar();
   const [commandOpen, setCommandOpen] = useState(false);
 
-  // If an unauthenticated visitor attempts to access a sub-path client-side, return to /ligera
-  useEffect(() => {
-    if (authChecked && !user && pathname !== "/ligera") {
-      router.replace("/ligera");
-    }
-  }, [authChecked, user, pathname, router]);
-
   // Global Cmd+K / Ctrl+K shortcut for fast navigation
   useEffect(() => {
-    if (!user) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -102,7 +95,7 @@ function ShellContent({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [user]);
+  }, []);
 
   const sections: NavSection[] = useMemo(() => {
     const raw: NavSection[] = [
@@ -163,21 +156,6 @@ function ShellContent({ children }: { children: ReactNode }) {
   }, [isOwner, badges]);
 
   const flatItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
-
-  if (!authChecked) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-          <p className="text-xs tracking-[0.2em] uppercase">Loading</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <StealthLoginView />;
-  }
 
   const activeItem = flatItems.find(
     (item) =>
@@ -405,9 +383,35 @@ function ShellContent({ children }: { children: ReactNode }) {
 }
 
 export function LigeraAdminShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, authChecked } = useLigeraAdmin();
+
+  // If an unauthenticated visitor attempts to access a sub-path client-side, return to /ligera
+  useEffect(() => {
+    if (authChecked && !user && pathname !== "/ligera") {
+      router.replace("/ligera");
+    }
+  }, [authChecked, user, pathname, router]);
+
+  if (!authChecked) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+          <p className="text-xs tracking-[0.2em] uppercase">Loading</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <StealthLoginView />;
+  }
+
   return (
     <SidebarProvider>
-      <ShellContent>{children}</ShellContent>
+      <ShellContent user={user}>{children}</ShellContent>
     </SidebarProvider>
   );
 }
