@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/guard";
 import { connectDb } from "@/lib/db/connect";
 import { NotificationLog } from "@/lib/db/models/notificationLog";
+import { deliverNotificationById } from "@/lib/services/notifications/queue";
 
 export async function POST(
   request: NextRequest,
@@ -34,6 +35,11 @@ export async function POST(
       lastError: null,
       providerId: null,
     });
+    if (process.env.NODE_ENV !== "test" && process.env.RESEND_API_KEY) {
+      await deliverNotificationById(id).catch(() => {});
+      const updated = await NotificationLog.findById(id).lean();
+      return NextResponse.json({ id: row._id.toString(), status: updated?.status || "pending" });
+    }
     return NextResponse.json({ id: row._id.toString(), status: "pending" });
   } catch (error: any) {
     console.error("RESEND_ERROR", error);

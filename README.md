@@ -14,7 +14,6 @@ ligera/
 ├── README.md              # Project overview, setup, and API summary
 ├── workflows/             # Engineering specs, contracts, and implementation plans
 └── web/                   # Unified Next.js 15 fullstack app (`ligera-web`)
-    ├── instrumentation.ts # Next.js startup hook (scheduler initialization)
     ├── middleware.ts      # Request middleware
     ├── next.config.ts     # Next.js configuration
     ├── package.json       # App dependencies and scripts
@@ -71,9 +70,6 @@ CLOUDINARY_API_SECRET="<api-secret>"
 # Resend Email
 RESEND_API_KEY="<resend-api-key>"
 EMAIL_FROM="Ligera <orders@yourdomain.com>"
-
-# Background Scheduler
-ENABLE_SCHEDULER="true"
 
 # Optional Owner Seed Script (`scripts/seed-owner.ts`)
 OWNER_EMAIL="<owner-email>"

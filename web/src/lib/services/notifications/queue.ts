@@ -61,93 +61,108 @@ function renderTemplate(type: string, payload: any, overrides: any = {}) {
   }
 }
 
+async function deliverNotificationRow(row: any, emailTemplatesOverrides: Record<string, any>) {
+  try {
+    // Status guard to prevent double-send
+    const current = await NotificationLog.findOne({ _id: row._id });
+    if (!current || current.status !== "pending") {
+      return;
+    }
+
+    const payload = (row.payload as any) || {};
+    const overrides = emailTemplatesOverrides[row.type] || {};
+
+    const html = renderTemplate(row.type, payload, overrides);
+    const subject = getSubject(row.type, payload);
+
+    const result = await sendEmail({
+      from: getFromAddress(),
+      to: row.recipient,
+      subject,
+      html,
+      headers: { "X-Entity-Ref": row.dedupeKey },
+    });
+
+    const providerId = (result as any)?.data?.id || (result as any)?.id || null;
+    const sentAt = new Date();
+
+    await NotificationLog.findOneAndUpdate(
+      { _id: row._id, status: "pending" },
+      {
+        status: "sent",
+        sentAt,
+        providerId,
+      }
+    );
+  } catch (error: any) {
+    try {
+      const current = await NotificationLog.findOne({ _id: row._id });
+      if (!current) return;
+      if (current.status === "sent") return; // don't retry if already sent
+
+      const retryCount = (current.retryCount || 0) + 1;
+      if (retryCount >= 5) {
+        let lastError = error?.message || String(error);
+        if (lastError.length > 500) {
+          lastError = lastError.substring(0, 500);
+        }
+        await NotificationLog.findOneAndUpdate(
+          { _id: row._id },
+          {
+            status: "failed",
+            retryCount,
+            lastError,
+          }
+        );
+      } else {
+        const backoffMs = BACKOFF_SCHEDULE[retryCount - 1] || BACKOFF_SCHEDULE[BACKOFF_SCHEDULE.length - 1];
+        const nextAttemptAt = new Date(Date.now() + backoffMs);
+        let lastError = error?.message || String(error);
+        if (lastError.length > 500) {
+          lastError = lastError.substring(0, 500);
+        }
+        await NotificationLog.findOneAndUpdate(
+          { _id: row._id },
+          {
+            status: "pending",
+            retryCount,
+            nextAttemptAt,
+            lastError,
+          }
+        );
+      }
+    } catch {
+      // Don't block caller on error persistence failure
+    }
+  }
+}
+
+export async function deliverNotificationById(id: string) {
+  await connectDb();
+  const row = await NotificationLog.findById(id);
+  if (!row || row.status !== "pending") {
+    return;
+  }
+  const settings = await Settings.findOne().lean();
+  const emailTemplatesOverrides = (settings as any)?.emailTemplates || {};
+  await deliverNotificationRow(row, emailTemplatesOverrides);
+}
+
 export async function processNotificationQueue() {
   await connectDb();
   const now = new Date();
-  
+
   // Find due pending rows
   const rows = await NotificationLog.find({
     status: "pending",
     nextAttemptAt: { $lte: now },
   }).limit(50);
-  
+
   const settings = await Settings.findOne().lean();
   const emailTemplatesOverrides = (settings as any)?.emailTemplates || {};
-  
+
   for (const row of rows) {
-    try {
-      // Status guard to prevent double-send
-      const current = await NotificationLog.findOne({ _id: row._id });
-      if (!current || current.status !== "pending") {
-        continue;
-      }
-      
-      const payload = (row.payload as any) || {};
-      const overrides = emailTemplatesOverrides[row.type] || {};
-      
-      const html = renderTemplate(row.type, payload, overrides);
-      const subject = getSubject(row.type, payload);
-      
-      const result = await sendEmail({
-        from: getFromAddress(),
-        to: row.recipient,
-        subject,
-        html,
-        headers: { "X-Entity-Ref": row.dedupeKey },
-      });
-      
-      const providerId = (result as any)?.data?.id || (result as any)?.id || null;
-      const sentAt = new Date();
-      
-      await NotificationLog.findOneAndUpdate(
-        { _id: row._id, status: "pending" },
-        {
-          status: "sent",
-          sentAt,
-          providerId,
-        }
-      );
-    } catch (error: any) {
-      try {
-        const current = await NotificationLog.findOne({ _id: row._id });
-        if (!current) continue;
-        if (current.status === "sent") continue; // don't retry if already sent
-        
-        const retryCount = (current.retryCount || 0) + 1;
-        if (retryCount >= 5) {
-          let lastError = error?.message || String(error);
-          if (lastError.length > 500) {
-            lastError = lastError.substring(0, 500);
-          }
-          await NotificationLog.findOneAndUpdate(
-            { _id: row._id },
-            {
-              status: "failed",
-              retryCount,
-              lastError,
-            }
-          );
-        } else {
-          const backoffMs = BACKOFF_SCHEDULE[retryCount - 1] || BACKOFF_SCHEDULE[BACKOFF_SCHEDULE.length - 1];
-          const nextAttemptAt = new Date(Date.now() + backoffMs);
-          let lastError = error?.message || String(error);
-          if (lastError.length > 500) {
-            lastError = lastError.substring(0, 500);
-          }
-          await NotificationLog.findOneAndUpdate(
-            { _id: row._id },
-            {
-              status: "pending",
-              retryCount,
-              nextAttemptAt,
-              lastError,
-            }
-          );
-        }
-      } catch (e) {
-        // Don't block rest of batch
-      }
-    }
+    await deliverNotificationRow(row, emailTemplatesOverrides);
   }
 }
 

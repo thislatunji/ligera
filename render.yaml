@@ -2,8 +2,6 @@ services:
   - type: web
     name: ligera-web
     runtime: docker
-    # Starter (always-on) and single instance keep the in-process node-cron scheduler
-    # (releaseExpiredHolds + processNotificationQueue) running reliably without duplicate sends.
     plan: starter
     numInstances: 1
     dockerfilePath: ./web/Dockerfile
@@ -21,8 +19,6 @@ services:
         value: "1"
       - key: NODE_OPTIONS
         value: --max-old-space-size=384
-      - key: ENABLE_SCHEDULER
-        value: "true"
       - key: APP_URL
         value: https://ligerascents.com
       - key: NEXT_PUBLIC_SITE_URL

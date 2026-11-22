@@ -10,8 +10,10 @@ import { createPaymentLink } from "@/lib/integrations/flutterwave";
 import { calculateDeliveryFee } from "./fees";
 import { computeExpectedDeliveryWindow } from "./window";
 import { resolveCheckoutItems } from "./resolve-items";
+import { releaseExpiredHolds } from "./hold-release";
 
 export async function placeOrder(input: any) {
+  await releaseExpiredHolds().catch(() => {});
   const resolvedLines = await resolveCheckoutItems(input.items || []);
 
   // Validate delivery zone before reserving stock

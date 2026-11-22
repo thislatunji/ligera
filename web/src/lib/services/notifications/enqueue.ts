@@ -4,6 +4,7 @@ import { Order } from "@/lib/db/models/order";
 import { CustomRequest } from "@/lib/db/models/customRequest";
 import { Settings } from "@/lib/db/models/settings";
 import { User } from "@/lib/db/models/user";
+import { deliverNotificationById } from "./queue";
 
 export type { NotificationType };
 export { NOTIFICATION_TYPES };
@@ -167,6 +168,9 @@ export async function enqueueNotification(type: NotificationType | string, ctx: 
       retryCount: 0,
       nextAttemptAt: new Date(),
     });
+    if (process.env.NODE_ENV !== "test" && process.env.RESEND_API_KEY) {
+      void deliverNotificationById(created._id.toString()).catch(() => {});
+    }
     return { inserted: true };
   } catch (error: any) {
     // If duplicate key error due to unique index, treat as not inserted
