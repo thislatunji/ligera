@@ -396,7 +396,7 @@ export function LigeraAdminShell({ children }: { children: ReactNode }) {
 
   if (!authChecked) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <div className="flex min-h-dvh w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
           <p className="text-xs tracking-[0.2em] uppercase">Loading</p>

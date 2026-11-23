@@ -89,14 +89,14 @@ export function StealthLoginView() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-5 py-12">
+    <div className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-x-hidden bg-background px-4 py-8 sm:px-5 sm:py-12">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,oklch(0.935_0.021_82_/_0.9),transparent_65%)]"
       />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-xl border border-clay/60 bg-card/95 p-8 shadow-[var(--shadow-lift)] backdrop-blur-sm sm:p-10">
+        <div className="rounded-xl border border-clay/60 bg-card/95 p-6 shadow-[var(--shadow-lift)] backdrop-blur-sm sm:p-10">
           <div className="flex flex-col items-center text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 bg-forest/95 p-2.5 shadow-sm">
               <Image
@@ -108,7 +108,7 @@ export function StealthLoginView() {
                 priority
               />
             </div>
-            <h1 className="mt-5 font-display text-4xl tracking-[0.14em] text-forest uppercase">
+            <h1 className="mt-5 font-display text-3xl tracking-[0.14em] text-forest uppercase sm:text-4xl">
               Ligera
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -131,6 +131,7 @@ export function StealthLoginView() {
                     setErrorMsg(null);
                   }}
                   placeholder="name@ligerascents.com"
+                  className="h-11 sm:h-10"
                 />
               </div>
 
@@ -143,7 +144,7 @@ export function StealthLoginView() {
                       setResetEmail(email);
                       setResetMode("request");
                     }}
-                    className="text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                    className="py-1 text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -160,7 +161,7 @@ export function StealthLoginView() {
                       setPassword(e.target.value);
                       setErrorMsg(null);
                     }}
-                    className="pr-10"
+                    className="h-11 pr-10 sm:h-10"
                   />
                   <button
                     type="button"
@@ -189,7 +190,7 @@ export function StealthLoginView() {
                     placeholder="000000"
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="font-mono tracking-[0.35em]"
+                    className="h-11 font-mono tracking-[0.35em] sm:h-10"
                   />
                 </div>
               )}
@@ -206,7 +207,7 @@ export function StealthLoginView() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="h-10 w-full bg-forest text-forest-foreground hover:bg-forest/90"
+                className="h-11 w-full bg-forest text-forest-foreground hover:bg-forest/90 sm:h-10"
               >
                 <Lock className="h-3.5 w-3.5" />
                 {submitting ? "Verifying…" : "Sign in"}
@@ -223,12 +224,13 @@ export function StealthLoginView() {
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                   placeholder="name@ligerascents.com"
+                  className="h-11 sm:h-10"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={resetBusy}
-                className="w-full bg-forest text-forest-foreground hover:bg-forest/90"
+                className="h-11 w-full bg-forest text-forest-foreground hover:bg-forest/90 sm:h-10"
               >
                 {resetBusy ? "Sending…" : "Send reset link"}
               </Button>
@@ -236,14 +238,14 @@ export function StealthLoginView() {
                 <button
                   type="button"
                   onClick={() => setResetMode("none")}
-                  className="text-muted-foreground hover:text-foreground hover:underline"
+                  className="py-1 text-muted-foreground hover:text-foreground hover:underline"
                 >
                   Back to sign in
                 </button>
                 <button
                   type="button"
                   onClick={() => setResetMode("confirm")}
-                  className="text-muted-foreground hover:text-foreground hover:underline"
+                  className="py-1 text-muted-foreground hover:text-foreground hover:underline"
                 >
                   Already have a token?
                 </button>
@@ -259,6 +261,7 @@ export function StealthLoginView() {
                   value={resetToken}
                   onChange={(e) => setResetToken(e.target.value)}
                   placeholder="Paste token from email"
+                  className="h-11 sm:h-10"
                 />
               </div>
               <div className="space-y-1.5">
@@ -271,12 +274,13 @@ export function StealthLoginView() {
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   placeholder="At least 8 characters"
+                  className="h-11 sm:h-10"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={resetBusy}
-                className="w-full bg-forest text-forest-foreground hover:bg-forest/90"
+                className="h-11 w-full bg-forest text-forest-foreground hover:bg-forest/90 sm:h-10"
               >
                 <KeyRound className="h-3.5 w-3.5" />
                 {resetBusy ? "Updating…" : "Set new password"}
@@ -284,7 +288,7 @@ export function StealthLoginView() {
               <button
                 type="button"
                 onClick={() => setResetMode("none")}
-                className="block w-full text-center text-xs text-muted-foreground hover:text-foreground hover:underline"
+                className="block w-full py-1 text-center text-xs text-muted-foreground hover:text-foreground hover:underline"
               >
                 Back to sign in
               </button>
@@ -295,7 +299,7 @@ export function StealthLoginView() {
         <div className="mt-6 text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-1.5 py-1.5 text-xs tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Return to storefront

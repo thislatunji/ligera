@@ -66,7 +66,18 @@ describe("LigeraAdminShell & StealthLoginView layout", () => {
     const outerWrapper = container.firstElementChild as HTMLElement;
     expect(outerWrapper).not.toBeNull();
     expect(outerWrapper.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(["flex", "min-h-screen", "w-full", "items-center", "justify-center"]),
+      expect.arrayContaining([
+        "flex",
+        "min-h-dvh",
+        "w-full",
+        "items-center",
+        "justify-center",
+        "overflow-x-hidden",
+        "px-4",
+        "py-8",
+        "sm:px-5",
+        "sm:py-12",
+      ]),
     );
 
     const cardContainer = heading.closest(".max-w-md") as HTMLElement;
@@ -100,7 +111,7 @@ describe("LigeraAdminShell & StealthLoginView layout", () => {
     const loadingWrapper = container.firstElementChild as HTMLElement;
     expect(loadingWrapper).not.toBeNull();
     expect(loadingWrapper.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(["flex", "min-h-screen", "w-full", "items-center", "justify-center"]),
+      expect.arrayContaining(["flex", "min-h-dvh", "w-full", "items-center", "justify-center"]),
     );
   });
 
